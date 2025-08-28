@@ -1,0 +1,131 @@
+import { RequestContext } from '../request-context-provider/openmfp-request-context-provider.js';
+import { ContentConfigurationServiceProvidersService } from './content-configuration-service-providers.service.js';
+import { GraphQLClient } from 'graphql-request';
+
+jest.mock('graphql-request', () => {
+  return {
+    GraphQLClient: jest.fn().mockImplementation(() => ({
+      request: jest.fn(),
+    })),
+    gql(query: TemplateStringsArray) { return query[0]; },
+  };
+});
+
+describe('ContentConfigurationServiceProvidersService', () => {
+  let service: ContentConfigurationServiceProvidersService;
+  let mockClient: jest.Mocked<GraphQLClient>;
+  let context: RequestContext;
+
+  beforeEach(() => {
+    service = new ContentConfigurationServiceProvidersService();
+    mockClient = new GraphQLClient('') as any;
+    (GraphQLClient as jest.Mock).mockReturnValue(mockClient);
+    context = {
+      organization: 'org1',
+      crdGatewayApiUrl:
+        'http://example.com/kubernetes-graphql-gateway/root/graphql',
+      account: 'acc1',
+    } as RequestContext;
+  });
+
+  it('throws if token is missing', async () => {
+    await expect(
+      service.getServiceProviders('', ['entity'], context),
+    ).rejects.toThrow('Token is required');
+  });
+
+  it('throws if context organization is missing', async () => {
+    const badContext = { ...context, organization: undefined } as any;
+    await expect(
+      service.getServiceProviders('token', ['entity'], badContext),
+    ).rejects.toThrow('Context with organization is required');
+  });
+
+  it('returns parsed content configurations', async () => {
+    mockClient.request.mockResolvedValue({
+      core_openmfp_io: {
+        ContentConfigurations: [
+          {
+            metadata: {
+              name: 'conf1',
+              labels: { 'portal.openmfp.org/entity': 'entity' },
+            },
+            spec: { remoteConfiguration: { url: 'http://remote' } },
+            status: {
+              configurationResult: JSON.stringify({ url: 'http://parsed' }),
+            },
+          },
+        ],
+      },
+    });
+    const result = await service.getServiceProviders(
+      'token',
+      ['entity'],
+      context,
+    );
+    expect(result.rawServiceProviders[0].contentConfiguration[0].url).toBe(
+      'http://parsed',
+    );
+  });
+
+  it('falls back to spec.remoteConfiguration.url if missing in parsed config', async () => {
+    mockClient.request.mockResolvedValue({
+      core_openmfp_io: {
+        ContentConfigurations: [
+          {
+            metadata: {
+              name: 'conf1',
+              labels: { 'portal.openmfp.org/entity': 'entity' },
+            },
+            spec: { remoteConfiguration: { url: 'http://remote' } },
+            status: { configurationResult: JSON.stringify({}) },
+          },
+        ],
+      },
+    });
+    const result = await service.getServiceProviders(
+      'token',
+      ['entity'],
+      context,
+    );
+    expect(result.rawServiceProviders[0].contentConfiguration[0].url).toBe(
+      'http://remote',
+    );
+  });
+
+  it('throws on missing configurationResult', async () => {
+    mockClient.request.mockResolvedValue({
+      core_openmfp_io: {
+        ContentConfigurations: [
+          {
+            metadata: {
+              name: 'conf1',
+              labels: { 'portal.openmfp.org/entity': 'entity' },
+            },
+            spec: { remoteConfiguration: { url: 'http://remote' } },
+            status: {},
+          },
+        ],
+      },
+    });
+    await expect(
+      service.getServiceProviders('token', ['entity'], context),
+    ).rejects.toThrow('Missing configurationResult');
+  });
+
+  it('throws if response structure is invalid', async () => {
+    mockClient.request.mockResolvedValue({});
+    await expect(
+      service.getServiceProviders('token', ['entity'], context),
+    ).rejects.toThrow(
+      'Invalid response structure: missing ContentConfigurations',
+    );
+  });
+
+  it('wraps unexpected errors', async () => {
+    mockClient.request.mockRejectedValue(new Error('network error'));
+    await expect(
+      service.getServiceProviders('token', ['entity'], context),
+    ).rejects.toThrow('Failed to fetch content configurations: network error');
+  });
+});
