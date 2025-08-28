@@ -2,7 +2,6 @@
 /dist
 /node_modules
 /build
-/test-run-reports
 
 # Logs
 logs
@@ -19,6 +18,7 @@ lerna-debug.log*
 # Tests
 /coverage
 /.nyc_output
+/test-run-reports
 
 # IDEs and editors
 /.idea
