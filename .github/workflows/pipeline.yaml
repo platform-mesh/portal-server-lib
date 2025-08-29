@@ -1,0 +1,18 @@
+name: pipe
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    types:
+      - opened
+      - synchronize
+
+concurrency:
+  group: ${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  pipe:
+    uses: platform-mesh/.github/.github/workflows/pipeline-node-module.yml@main
+    secrets: inherit
