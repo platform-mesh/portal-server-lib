@@ -1,5 +1,5 @@
 export interface ContentConfigurationQueryResponse {
-    core_openmfp_io: ContentConfigurationsResponse;
+  ui_platform_mesh_io: ContentConfigurationsResponse;
 }
 
 export interface ContentConfigurationsResponse {
