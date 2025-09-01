@@ -9,7 +9,7 @@ import { GraphQLClient, gql } from 'graphql-request';
 
 export const contentConfigurationsQuery = gql`
   query {
-    core_openmfp_io {
+    ui_platform_mesh_io {
       ContentConfigurations {
         metadata {
           name
@@ -66,7 +66,7 @@ export class ContentConfigurationServiceProvidersService
       );
 
       // Validate response structure
-      if (!response?.core_openmfp_io?.ContentConfigurations) {
+      if (!response?.ui_platform_mesh_io?.ContentConfigurations) {
         throw new Error(
           'Invalid response structure: missing ContentConfigurations',
         );
@@ -74,9 +74,9 @@ export class ContentConfigurationServiceProvidersService
 
       const entity = !entities || !entities.length ? 'main' : entities[0];
       const contentConfigurations =
-        response.core_openmfp_io.ContentConfigurations.filter(
+        response.ui_platform_mesh_io.ContentConfigurations.filter(
           (item) =>
-            item.metadata.labels?.['portal.openmfp.org/entity'] === entity,
+            item.metadata.labels?.['ui.platform-mesh.io/entity'] === entity,
         ).map((item) => {
           try {
             // Validate required fields

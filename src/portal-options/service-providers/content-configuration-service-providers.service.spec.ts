@@ -43,12 +43,12 @@ describe('ContentConfigurationServiceProvidersService', () => {
 
   it('returns parsed content configurations', async () => {
     mockClient.request.mockResolvedValue({
-      core_openmfp_io: {
+      ui_platform_mesh_io: {
         ContentConfigurations: [
           {
             metadata: {
               name: 'conf1',
-              labels: { 'portal.openmfp.org/entity': 'entity' },
+              labels: { 'ui.platform-mesh.io/entity': 'entity' },
             },
             spec: { remoteConfiguration: { url: 'http://remote' } },
             status: {
@@ -70,12 +70,12 @@ describe('ContentConfigurationServiceProvidersService', () => {
 
   it('falls back to spec.remoteConfiguration.url if missing in parsed config', async () => {
     mockClient.request.mockResolvedValue({
-      core_openmfp_io: {
+      ui_platform_mesh_io: {
         ContentConfigurations: [
           {
             metadata: {
               name: 'conf1',
-              labels: { 'portal.openmfp.org/entity': 'entity' },
+              labels: { 'ui.platform-mesh.io/entity': 'entity' },
             },
             spec: { remoteConfiguration: { url: 'http://remote' } },
             status: { configurationResult: JSON.stringify({}) },
@@ -95,12 +95,12 @@ describe('ContentConfigurationServiceProvidersService', () => {
 
   it('throws on missing configurationResult', async () => {
     mockClient.request.mockResolvedValue({
-      core_openmfp_io: {
+      ui_platform_mesh_io: {
         ContentConfigurations: [
           {
             metadata: {
               name: 'conf1',
-              labels: { 'portal.openmfp.org/entity': 'entity' },
+              labels: { 'ui.platform-mesh.io/entity': 'entity' },
             },
             spec: { remoteConfiguration: { url: 'http://remote' } },
             status: {},

@@ -79,7 +79,7 @@ export class KubernetesServiceProvidersService
       group: 'core.openmfp.io',
       version: 'v1alpha1',
       plural: 'contentconfigurations',
-      labelSelector: `portal.openmfp.org/entity=${entity}`,
+      labelSelector: `ui.platform-mesh.io/entity=${entity}`,
     };
     return await this.k8sApi.listClusterCustomObject(gvr, {
       middleware: [
