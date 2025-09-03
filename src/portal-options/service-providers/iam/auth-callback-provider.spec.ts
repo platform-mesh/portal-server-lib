@@ -39,4 +39,30 @@ describe('AuthCallbackProvider', () => {
     expect(iamServiceMock.addUser).toHaveBeenCalledTimes(1);
     expect(iamServiceMock.addUser).toHaveBeenCalledWith('idtoken', req);
   });
+
+  it('should log error if addUser throws', async () => {
+    const req = mock<Request>();
+    const res = mock<Response>();
+    const error = new Error('boom');
+    (iamServiceMock.addUser as jest.Mock).mockRejectedValueOnce(error);
+
+    const errorSpy = jest
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .spyOn((callback as any).logger, 'error')
+      .mockImplementation(() => undefined as unknown as never);
+
+    await callback.handleSuccess(req, res, {
+      id_token: 'bad',
+    } as AuthTokenData);
+
+    expect(iamServiceMock.addUser).toHaveBeenCalledTimes(1);
+    expect(errorSpy).toHaveBeenCalledWith(error);
+  });
+
+  it('should resolve handleFailure without action', async () => {
+    const req = mock<Request>();
+    const res = mock<Response>();
+
+    await expect(callback.handleFailure(req, res)).resolves.toBeUndefined();
+  });
 });

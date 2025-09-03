@@ -7,7 +7,13 @@ module.exports = {
   rootDir: '.',
   testRegex: '.*\\.spec\\.ts$',
   transform: {
-    '^.+\\.(t|j)s$': 'ts-jest',
+    '^.+\\.(t|j)s$': [
+      'ts-jest',
+      {
+        tsconfig: 'tsconfig.test.json',
+        useESM: true,
+      },
+    ],
   },
   collectCoverageFrom: ['**/*.(t|j)s'],
   coverageDirectory: './coverage',
@@ -20,11 +26,6 @@ module.exports = {
   },
   preset: 'ts-jest/presets/default-esm',
   extensionsToTreatAsEsm: ['.ts'],
-  globals: {
-    'ts-jest': {
-      useESM: true,
-    },
-  },
   transformIgnorePatterns: [
     '/node_modules/(?!(@openmfp/portal-server-lib|graphql-request)/)',
   ],
