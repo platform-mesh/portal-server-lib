@@ -3,32 +3,8 @@ const baseConfig = require('./base.jest.config.cjs');
 
 module.exports = {
   ...baseConfig,
-  moduleFileExtensions: ['js', 'json', 'ts'],
-  rootDir: '.',
-  testRegex: '.*\\.spec\\.ts$',
-  transform: {
-    '^.+\\.(t|j)s$': [
-      'ts-jest',
-      {
-        tsconfig: 'tsconfig.test.json',
-        useESM: true,
-      },
-    ],
-  },
-  collectCoverageFrom: ['**/*.(t|j)s'],
-  coverageDirectory: './coverage',
-  testEnvironment: 'node',
-  passWithNoTests: true,
-  roots: ['<rootDir>/src/'],
-  moduleNameMapper: {
-    '^@openmfp/portal-lib(|/.*)$': '<rootDir>/libs/portal-lib/src/$1',
-    '^(\\.{1,2}/.*)\\.js$': '$1',
-  },
-  preset: 'ts-jest/presets/default-esm',
-  extensionsToTreatAsEsm: ['.ts'],
-  transformIgnorePatterns: [
-    '/node_modules/(?!(@openmfp/portal-server-lib|graphql-request)/)',
-  ],
+  rootDir: 'src',
+  testRegex: '.spec.ts$',
   collectCoverage: true,
   reporters: ['default'],
   coverageThreshold: {
@@ -40,4 +16,25 @@ module.exports = {
     },
   },
   coveragePathIgnorePatterns: ['/node_modules/', '/integration-tests/'],
+  coverageDirectory: '../test-run-reports/coverage/unit',
+  transformIgnorePatterns: ['/node_modules/(?!(@openmfp/portal-server-lib|graphql-request)/)'],
+  transform: {
+    '^.+\\.(t|j)s$': [
+      'ts-jest',
+      {
+        tsconfig: 'tsconfig.test.json',
+        useESM: true,
+      },
+    ],
+  },
+  testEnvironment: 'node',
+  passWithNoTests: true,
+  roots: ['<rootDir>'],
+  moduleNameMapper: {
+    '^@openmfp/portal-lib(|/.*)$': '<rootDir>/libs/portal-lib/src/$1',
+    '^(\\.{1,2}/.*)\\.js$': '$1',
+  },
+  preset: 'ts-jest/presets/default-esm',
+  extensionsToTreatAsEsm: ['.ts'],
+  moduleFileExtensions: ['js', 'json', 'ts'],
 };
