@@ -7,7 +7,9 @@ jest.mock('graphql-request', () => {
     GraphQLClient: jest.fn().mockImplementation(() => ({
       request: jest.fn(),
     })),
-    gql(query: TemplateStringsArray) { return query[0]; },
+    gql(query: TemplateStringsArray) {
+      return query[0];
+    },
   };
 });
 
