@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
-import { EnvService, RequestContextProvider } from '@openmfp/portal-server-lib';
+import { RequestContextProvider } from '@openmfp/portal-server-lib';
 import type { Request } from 'express';
+import { PMAuthConfigProvider } from '../auth-config-provider/auth-config-provider.js';
 import { OpenmfpPortalContextService } from '../portal-context-provider/openmfp-portal-context.service.js';
 
 export interface RequestContext extends Record<string, any> {
@@ -12,7 +13,7 @@ export interface RequestContext extends Record<string, any> {
 @Injectable()
 export class RequestContextProviderImpl implements RequestContextProvider {
   constructor(
-    private envService: EnvService,
+    private authConfigProvider: PMAuthConfigProvider,
     private openmfpPortalContextService: OpenmfpPortalContextService
   ) {}
 
@@ -20,7 +21,7 @@ export class RequestContextProviderImpl implements RequestContextProvider {
     return {
       ...request.query,
       ...(await this.openmfpPortalContextService.getContextValues(request)),
-      organization: this.envService.getDomain(request).idpName,
+      organization: this.authConfigProvider.getDomain(request).idpName,
     };
   }
 }

@@ -1,17 +1,19 @@
+import { PMAuthConfigProvider } from '../auth-config-provider/auth-config-provider';
 import { OpenmfpPortalContextService } from '../portal-context-provider/openmfp-portal-context.service';
 import { RequestContextProviderImpl } from './openmfp-request-context-provider';
-import { EnvService } from '@openmfp/portal-server-lib';
 import type { Request } from 'express';
 import { mock } from 'jest-mock-extended';
 
 describe('RequestContextProviderImpl', () => {
   let provider: RequestContextProviderImpl;
-  const envService = mock<EnvService>();
+  const pmAuthConfigProviderMock = mock<PMAuthConfigProvider>();
   const portalContext = mock<OpenmfpPortalContextService>();
 
   beforeEach(() => {
     jest.resetAllMocks();
-    (envService.getDomain as unknown as jest.Mock).mockReturnValue({
+    (
+      pmAuthConfigProviderMock.getDomain as unknown as jest.Mock
+    ).mockReturnValue({
       idpName: 'org1',
       domain: 'org1.example.com',
     });
@@ -21,8 +23,8 @@ describe('RequestContextProviderImpl', () => {
     });
 
     provider = new RequestContextProviderImpl(
-      envService as any,
-      portalContext as any,
+      pmAuthConfigProviderMock,
+      portalContext,
     );
   });
 
@@ -42,7 +44,7 @@ describe('RequestContextProviderImpl', () => {
       organization: 'org1',
     });
 
-    expect(envService.getDomain).toHaveBeenCalledWith(req);
+    expect(pmAuthConfigProviderMock.getDomain).toHaveBeenCalledWith(req);
     expect(portalContext.getContextValues).toHaveBeenCalledWith(req);
   });
 });

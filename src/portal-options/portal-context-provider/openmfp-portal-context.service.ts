@@ -1,13 +1,14 @@
 import { Injectable } from '@nestjs/common';
-import { EnvService, PortalContextProvider } from '@openmfp/portal-server-lib';
+import { PortalContextProvider } from '@openmfp/portal-server-lib';
 import type { Request } from 'express';
 import process from 'node:process';
+import { PMAuthConfigProvider } from '../auth-config-provider/auth-config-provider.js';
 
 @Injectable()
 export class OpenmfpPortalContextService implements PortalContextProvider {
   private readonly openmfpPortalContext = 'OPENMFP_PORTAL_CONTEXT_';
 
-  constructor(private envService: EnvService) {}
+  constructor(private authConfigProvider: PMAuthConfigProvider) {}
 
   getContextValues(request: Request): Promise<Record<string, any>> {
     const portalContext: Record<string, any> = {};
@@ -31,7 +32,7 @@ export class OpenmfpPortalContextService implements PortalContextProvider {
     request: Request,
     portalContext: Record<string, any>
   ): void {
-    const org = this.envService.getDomain(request);
+    const org = this.authConfigProvider.getDomain(request);
     const subDomain = request.hostname === org.domain ? '' : `${org.idpName}.`;
     portalContext.crdGatewayApiUrl = portalContext.crdGatewayApiUrl
       ?.replace('${org-subdomain}', subDomain)
