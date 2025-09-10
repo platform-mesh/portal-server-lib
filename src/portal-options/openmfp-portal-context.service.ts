@@ -1,4 +1,4 @@
-import { PMAuthConfigProvider } from '../auth-config-provider/auth-config-provider.js';
+import { PMAuthConfigProvider } from './auth-config-provider.js';
 import { Injectable } from '@nestjs/common';
 import { PortalContextProvider } from '@openmfp/portal-server-lib';
 import type { Request } from 'express';

@@ -1,4 +1,4 @@
-import { PMAuthConfigProvider } from '../auth-config-provider/auth-config-provider';
+import { PMAuthConfigProvider } from './auth-config-provider.js';
 import { OpenmfpPortalContextService } from './openmfp-portal-context.service.js';
 import { Test, TestingModule } from '@nestjs/testing';
 import { Request } from 'express';

@@ -1,5 +1,5 @@
-import { PMAuthConfigProvider } from '../auth-config-provider/auth-config-provider.js';
-import { OpenmfpPortalContextService } from '../portal-context-provider/openmfp-portal-context.service.js';
+import { PMAuthConfigProvider } from './auth-config-provider.js';
+import { OpenmfpPortalContextService } from './openmfp-portal-context.service.js';
 import { Injectable } from '@nestjs/common';
 import { RequestContextProvider } from '@openmfp/portal-server-lib';
 import type { Request } from 'express';

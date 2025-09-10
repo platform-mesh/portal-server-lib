@@ -1,7 +1,7 @@
-import { RequestContext } from '../request-context-provider/openmfp-request-context-provider.js';
-import { contentConfigurationsQuery } from './contentconfigurations-query';
+import { RequestContext } from '../openmfp-request-context-provider.js';
+import { contentConfigurationsQuery } from './contentconfigurations-query.js';
 import { ContentConfigurationQueryResponse } from './models/contentconfigurations.js';
-import { welcomeNodeConfig } from './models/welcome-node-config';
+import { welcomeNodeConfig } from './models/welcome-node-config.js';
 import {
   ContentConfiguration,
   ServiceProviderResponse,

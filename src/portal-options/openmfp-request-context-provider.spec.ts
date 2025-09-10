@@ -1,6 +1,6 @@
-import { PMAuthConfigProvider } from '../auth-config-provider/auth-config-provider';
-import { OpenmfpPortalContextService } from '../portal-context-provider/openmfp-portal-context.service';
-import { RequestContextProviderImpl } from './openmfp-request-context-provider';
+import { PMAuthConfigProvider } from './auth-config-provider.js';
+import { OpenmfpPortalContextService } from './openmfp-portal-context.service.js';
+import { RequestContextProviderImpl } from './openmfp-request-context-provider.js';
 import type { Request } from 'express';
 import { mock } from 'jest-mock-extended';
 
