@@ -20,12 +20,12 @@ export class PMAuthConfigProvider implements AuthConfigService {
     try {
       return await this.envEuthConfigService.getAuthConfig(request);
     } catch {
-      this.logger.log(
+      this.logger.debug(
         'Failed to retrieve auth config from environment variables based on provided IDP.',
       );
     }
 
-    this.logger.log('Resolving auth config from default configuration.');
+    this.logger.debug('Resolving auth config from default configuration.');
 
     const oidc = await this.discoveryService.getOIDC('DEFAULT');
     const oauthServerUrl =
