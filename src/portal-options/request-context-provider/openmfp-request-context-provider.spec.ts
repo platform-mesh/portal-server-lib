@@ -14,8 +14,8 @@ describe('RequestContextProviderImpl', () => {
     (
       pmAuthConfigProviderMock.getDomain as unknown as jest.Mock
     ).mockReturnValue({
-      idpName: 'org1',
-      domain: 'org1.example.com',
+      organization: 'org1',
+      baseDomain: 'org1.example.com',
     });
     (portalContext.getContextValues as unknown as jest.Mock).mockResolvedValue({
       crdGatewayApiUrl: 'http://gateway/graphql',

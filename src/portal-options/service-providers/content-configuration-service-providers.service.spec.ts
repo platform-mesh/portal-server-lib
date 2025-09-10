@@ -23,6 +23,7 @@ describe('ContentConfigurationServiceProvidersService', () => {
     mockClient = new GraphQLClient('') as any;
     (GraphQLClient as jest.Mock).mockReturnValue(mockClient);
     context = {
+      isSubDomain: true,
       organization: 'org1',
       crdGatewayApiUrl:
         'http://example.com/kubernetes-graphql-gateway/root/graphql',

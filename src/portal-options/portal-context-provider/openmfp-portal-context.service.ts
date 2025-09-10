@@ -1,8 +1,8 @@
+import { PMAuthConfigProvider } from '../auth-config-provider/auth-config-provider.js';
 import { Injectable } from '@nestjs/common';
 import { PortalContextProvider } from '@openmfp/portal-server-lib';
 import type { Request } from 'express';
 import process from 'node:process';
-import { PMAuthConfigProvider } from '../auth-config-provider/auth-config-provider.js';
 
 @Injectable()
 export class OpenmfpPortalContextService implements PortalContextProvider {
@@ -14,7 +14,7 @@ export class OpenmfpPortalContextService implements PortalContextProvider {
     const portalContext: Record<string, any> = {};
 
     const keys = Object.keys(process.env).filter((item) =>
-      item.startsWith(this.openmfpPortalContext)
+      item.startsWith(this.openmfpPortalContext),
     );
     keys.forEach((key) => {
       const keyName = key.substring(this.openmfpPortalContext.length).trim();
@@ -30,13 +30,14 @@ export class OpenmfpPortalContextService implements PortalContextProvider {
 
   private processGraphQLGatewayApiUrl(
     request: Request,
-    portalContext: Record<string, any>
+    portalContext: Record<string, any>,
   ): void {
     const org = this.authConfigProvider.getDomain(request);
-    const subDomain = request.hostname === org.domain ? '' : `${org.idpName}.`;
+    const subDomain =
+      request.hostname === org.baseDomain ? '' : `${org.organization}.`;
     portalContext.crdGatewayApiUrl = portalContext.crdGatewayApiUrl
       ?.replace('${org-subdomain}', subDomain)
-      .replace('${org-name}', `${org.idpName}`);
+      .replace('${org-name}', org.organization);
   }
 
   private toCamelCase(text: string): string {

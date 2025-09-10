@@ -1,27 +1,30 @@
+import { PMAuthConfigProvider } from '../auth-config-provider/auth-config-provider.js';
+import { OpenmfpPortalContextService } from '../portal-context-provider/openmfp-portal-context.service.js';
 import { Injectable } from '@nestjs/common';
 import { RequestContextProvider } from '@openmfp/portal-server-lib';
 import type { Request } from 'express';
-import { PMAuthConfigProvider } from '../auth-config-provider/auth-config-provider.js';
-import { OpenmfpPortalContextService } from '../portal-context-provider/openmfp-portal-context.service.js';
 
 export interface RequestContext extends Record<string, any> {
   account?: string;
-  organization?: string;
+  organization: string;
   crdGatewayApiUrl?: string;
+  isSubDomain: boolean;
 }
 
 @Injectable()
 export class RequestContextProviderImpl implements RequestContextProvider {
   constructor(
     private authConfigProvider: PMAuthConfigProvider,
-    private openmfpPortalContextService: OpenmfpPortalContextService
+    private openmfpPortalContextService: OpenmfpPortalContextService,
   ) {}
 
   async getContextValues(request: Request): Promise<RequestContext> {
+    const domainData = this.authConfigProvider.getDomain(request);
     return {
       ...request.query,
       ...(await this.openmfpPortalContextService.getContextValues(request)),
-      organization: this.authConfigProvider.getDomain(request).idpName,
+      organization: domainData.organization,
+      isSubDomain: request.hostname !== domainData.baseDomain,
     };
   }
 }
