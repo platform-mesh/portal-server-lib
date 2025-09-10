@@ -1,4 +1,4 @@
-import { KubernetesServiceProvidersService } from './kubernetes-service-providers.service';
+import { KubernetesServiceProvidersService } from './kubernetes-service-providers.service.js';
 
 const listClusterCustomObject = jest.fn();
 

@@ -1,32 +1,13 @@
-import { RequestContext } from '../request-context-provider/openmfp-request-context-provider.js';
+import { RequestContext } from '../openmfp-request-context-provider.js';
+import { contentConfigurationsQuery } from './contentconfigurations-query.js';
 import { ContentConfigurationQueryResponse } from './models/contentconfigurations.js';
+import { welcomeNodeConfig } from './models/welcome-node-config.js';
 import {
   ContentConfiguration,
   ServiceProviderResponse,
   ServiceProviderService,
 } from '@openmfp/portal-server-lib';
-import { GraphQLClient, gql } from 'graphql-request';
-
-export const contentConfigurationsQuery = gql`
-  query {
-    ui_platform_mesh_io {
-      ContentConfigurations {
-        metadata {
-          name
-          labels
-        }
-        spec {
-          remoteConfiguration {
-            url
-          }
-        }
-        status {
-          configurationResult
-        }
-      }
-    }
-  }
-`;
+import { GraphQLClient } from 'graphql-request';
 
 export class ContentConfigurationServiceProvidersService
   implements ServiceProviderService
@@ -39,6 +20,10 @@ export class ContentConfigurationServiceProvidersService
     // Validate required parameters
     if (!token) {
       throw new Error('Token is required');
+    }
+
+    if (!context.isSubDomain) {
+      return welcomeNodeConfig;
     }
 
     if (!context?.organization) {

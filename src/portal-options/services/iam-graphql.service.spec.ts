@@ -1,6 +1,6 @@
-import { RequestContextProviderImpl } from '../../request-context-provider/openmfp-request-context-provider';
-import { IAMGraphQlService } from './iam-graphql.service';
-import { MUTATION_LOGIN } from './queries';
+import { RequestContextProviderImpl } from '../openmfp-request-context-provider.js';
+import { IAMGraphQlService } from './iam-graphql.service.js';
+import { MUTATION_LOGIN } from './queries.js';
 import { GraphQLClient } from 'graphql-request';
 import { mock } from 'jest-mock-extended';
 

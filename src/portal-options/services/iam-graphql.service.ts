@@ -1,4 +1,4 @@
-import { RequestContextProviderImpl } from '../../request-context-provider/openmfp-request-context-provider';
+import { RequestContextProviderImpl } from '../openmfp-request-context-provider.js';
 import { MUTATION_LOGIN } from './queries.js';
 import { Injectable } from '@nestjs/common';
 import type { Request } from 'express';
@@ -19,7 +19,7 @@ export class IAMGraphQlService {
     });
 
     try {
-      const response = await client.request(MUTATION_LOGIN);
+      await client.request(MUTATION_LOGIN);
     } catch (e) {
       console.error(e);
     }

@@ -1,4 +1,4 @@
-import { RequestContext } from '../request-context-provider/openmfp-request-context-provider.js';
+import { RequestContext } from '../openmfp-request-context-provider.js';
 import { ContentConfigurationServiceProvidersService } from './content-configuration-service-providers.service.js';
 import { GraphQLClient } from 'graphql-request';
 
@@ -23,6 +23,7 @@ describe('ContentConfigurationServiceProvidersService', () => {
     mockClient = new GraphQLClient('') as any;
     (GraphQLClient as jest.Mock).mockReturnValue(mockClient);
     context = {
+      isSubDomain: true,
       organization: 'org1',
       crdGatewayApiUrl:
         'http://example.com/kubernetes-graphql-gateway/root/graphql',

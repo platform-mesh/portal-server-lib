@@ -1,4 +1,4 @@
-import { IAMGraphQlService } from './iam-graphql.service.js';
+import { IAMGraphQlService } from './services/iam-graphql.service.js';
 import { Injectable, Logger } from '@nestjs/common';
 import { AuthCallback, AuthTokenData } from '@openmfp/portal-server-lib';
 import { Request, Response } from 'express';

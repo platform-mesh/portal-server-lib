@@ -1,24 +1,23 @@
+import { PMAuthConfigProvider } from './auth-config-provider.js';
 import { OpenmfpPortalContextService } from './openmfp-portal-context.service.js';
 import { Test, TestingModule } from '@nestjs/testing';
-import { EnvService } from '@openmfp/portal-server-lib';
 import { Request } from 'express';
+import { mock } from 'jest-mock-extended';
 
 describe('OpenmfpPortalContextService', () => {
   let service: OpenmfpPortalContextService;
-  let envService: jest.Mocked<EnvService>;
+  let pmAuthConfigProviderMock: jest.Mocked<PMAuthConfigProvider>;
   let mockRequest: any;
 
   beforeEach(async () => {
-    const envServiceMock = {
-      getDomain: jest.fn(),
-    };
+    pmAuthConfigProviderMock = mock();
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         OpenmfpPortalContextService,
         {
-          provide: EnvService,
-          useValue: envServiceMock,
+          provide: PMAuthConfigProvider,
+          useValue: pmAuthConfigProviderMock,
         },
       ],
     }).compile();
@@ -26,8 +25,6 @@ describe('OpenmfpPortalContextService', () => {
     service = module.get<OpenmfpPortalContextService>(
       OpenmfpPortalContextService,
     );
-    envService = module.get(EnvService);
-
     mockRequest = {
       hostname: 'test.example.com',
     };
@@ -44,9 +41,9 @@ describe('OpenmfpPortalContextService', () => {
   });
 
   it('should return empty context when no environment variables match prefix', async () => {
-    envService.getDomain.mockReturnValue({
-      domain: 'example.com',
-      idpName: 'test-org',
+    pmAuthConfigProviderMock.getDomain.mockReturnValue({
+      baseDomain: 'example.com',
+      organization: 'test-org',
     });
 
     const result = await service.getContextValues(mockRequest as Request);
@@ -60,9 +57,9 @@ describe('OpenmfpPortalContextService', () => {
     process.env.OTHER_ENV_VAR = 'should-be-ignored';
 
     try {
-      envService.getDomain.mockReturnValue({
-        domain: 'example.com',
-        idpName: 'test-org',
+      pmAuthConfigProviderMock.getDomain.mockReturnValue({
+        baseDomain: 'example.com',
+        organization: 'test-org',
       });
 
       const result = await service.getContextValues(mockRequest as Request);
@@ -83,9 +80,9 @@ describe('OpenmfpPortalContextService', () => {
     process.env.OPENMFP_PORTAL_CONTEXT_MULTIPLE_SNAKE_CASE_KEYS = 'value2';
 
     try {
-      envService.getDomain.mockReturnValue({
-        domain: 'example.com',
-        idpName: 'test-org',
+      pmAuthConfigProviderMock.getDomain.mockReturnValue({
+        baseDomain: 'example.com',
+        organization: 'test-org',
       });
 
       const result = await service.getContextValues(mockRequest as Request);
@@ -105,9 +102,9 @@ describe('OpenmfpPortalContextService', () => {
       'https://${org-subdomain}api.example.com/${org-name}/graphql';
 
     try {
-      envService.getDomain.mockReturnValue({
-        domain: 'example.com',
-        idpName: 'test-org',
+      pmAuthConfigProviderMock.getDomain.mockReturnValue({
+        baseDomain: 'example.com',
+        organization: 'test-org',
       });
 
       mockRequest.hostname = 'subdomain.example.com';
@@ -127,9 +124,9 @@ describe('OpenmfpPortalContextService', () => {
       'https://${org-subdomain}api.example.com/${org-name}/graphql';
 
     try {
-      envService.getDomain.mockReturnValue({
-        domain: 'example.com',
-        idpName: 'test-org',
+      pmAuthConfigProviderMock.getDomain.mockReturnValue({
+        baseDomain: 'example.com',
+        organization: 'test-org',
       });
 
       mockRequest.hostname = 'example.com';
@@ -150,9 +147,9 @@ describe('OpenmfpPortalContextService', () => {
     process.env.OPENMFP_PORTAL_CONTEXT_VALID_KEY = 'valid-value';
 
     try {
-      envService.getDomain.mockReturnValue({
-        domain: 'example.com',
-        idpName: 'test-org',
+      pmAuthConfigProviderMock.getDomain.mockReturnValue({
+        baseDomain: 'example.com',
+        organization: 'test-org',
       });
 
       const result = await service.getContextValues(mockRequest as Request);
@@ -171,9 +168,9 @@ describe('OpenmfpPortalContextService', () => {
     process.env.OPENMFP_PORTAL_CONTEXT_OTHER_KEY = 'value';
 
     try {
-      envService.getDomain.mockReturnValue({
-        domain: 'example.com',
-        idpName: 'test-org',
+      pmAuthConfigProviderMock.getDomain.mockReturnValue({
+        baseDomain: 'example.com',
+        organization: 'test-org',
       });
 
       const result = await service.getContextValues(mockRequest as Request);

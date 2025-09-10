@@ -1,5 +1,6 @@
+import { PMAuthConfigProvider } from './auth-config-provider.js';
 import { Injectable } from '@nestjs/common';
-import { EnvService, PortalContextProvider } from '@openmfp/portal-server-lib';
+import { PortalContextProvider } from '@openmfp/portal-server-lib';
 import type { Request } from 'express';
 import process from 'node:process';
 
@@ -7,13 +8,13 @@ import process from 'node:process';
 export class OpenmfpPortalContextService implements PortalContextProvider {
   private readonly openmfpPortalContext = 'OPENMFP_PORTAL_CONTEXT_';
 
-  constructor(private envService: EnvService) {}
+  constructor(private authConfigProvider: PMAuthConfigProvider) {}
 
   getContextValues(request: Request): Promise<Record<string, any>> {
     const portalContext: Record<string, any> = {};
 
     const keys = Object.keys(process.env).filter((item) =>
-      item.startsWith(this.openmfpPortalContext)
+      item.startsWith(this.openmfpPortalContext),
     );
     keys.forEach((key) => {
       const keyName = key.substring(this.openmfpPortalContext.length).trim();
@@ -29,13 +30,14 @@ export class OpenmfpPortalContextService implements PortalContextProvider {
 
   private processGraphQLGatewayApiUrl(
     request: Request,
-    portalContext: Record<string, any>
+    portalContext: Record<string, any>,
   ): void {
-    const org = this.envService.getDomain(request);
-    const subDomain = request.hostname === org.domain ? '' : `${org.idpName}.`;
+    const org = this.authConfigProvider.getDomain(request);
+    const subDomain =
+      request.hostname === org.baseDomain ? '' : `${org.organization}.`;
     portalContext.crdGatewayApiUrl = portalContext.crdGatewayApiUrl
       ?.replace('${org-subdomain}', subDomain)
-      .replace('${org-name}', `${org.idpName}`);
+      .replace('${org-name}', org.organization);
   }
 
   private toCamelCase(text: string): string {

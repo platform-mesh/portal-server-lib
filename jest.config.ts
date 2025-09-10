@@ -9,15 +9,17 @@ module.exports = {
   reporters: ['default'],
   coverageThreshold: {
     global: {
-      branches: 78,
-      functions: 80,
+      branches: 80,
+      functions: 95,
       lines: 95,
-      statements: -10,
+      statements: -3,
     },
   },
   coveragePathIgnorePatterns: ['/node_modules/', '/integration-tests/'],
   coverageDirectory: '../test-run-reports/coverage/unit',
-  transformIgnorePatterns: ['/node_modules/(?!(@openmfp/portal-server-lib|graphql-request)/)'],
+  transformIgnorePatterns: [
+    '/node_modules/(?!(@openmfp/portal-server-lib|graphql-request)/)',
+  ],
   transform: {
     '^.+\\.(t|j)s$': [
       'ts-jest',

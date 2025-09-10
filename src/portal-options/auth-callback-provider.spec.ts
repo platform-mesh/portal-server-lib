@@ -1,5 +1,5 @@
-import { AuthCallbackProvider } from './auth-callback-provider';
-import { IAMGraphQlService } from './iam-graphql.service';
+import { AuthCallbackProvider } from './auth-callback-provider.js';
+import { IAMGraphQlService } from './services/iam-graphql.service.js';
 import { Test, TestingModule } from '@nestjs/testing';
 import type { AuthTokenData } from '@openmfp/portal-server-lib';
 import type { Request, Response } from 'express';
