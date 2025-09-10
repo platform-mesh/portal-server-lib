@@ -1,4 +1,4 @@
-import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
 import {
   AuthConfigService,
   DiscoveryService,
@@ -9,6 +9,8 @@ import type { Request } from 'express';
 
 @Injectable()
 export class PMAuthConfigProvider implements AuthConfigService {
+  private logger: Logger = new Logger(PMAuthConfigProvider.name);
+
   constructor(
     private discoveryService: DiscoveryService,
     private envEuthConfigService: EnvAuthConfigService,
@@ -18,12 +20,12 @@ export class PMAuthConfigProvider implements AuthConfigService {
     try {
       return await this.envEuthConfigService.getAuthConfig(request);
     } catch {
-      console.log(
+      this.logger.log(
         'Failed to retrieve auth config from environment variables based on provided IDP.',
       );
     }
 
-    console.log('Resolving auth config from default configuration.');
+    this.logger.log('Resolving auth config from default configuration.');
 
     const oidc = await this.discoveryService.getOIDC('DEFAULT');
     const oauthServerUrl =

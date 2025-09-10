@@ -3,12 +3,12 @@ import { ServiceProviderResponse } from '@openmfp/portal-server-lib';
 export const welcomeNodeConfig: ServiceProviderResponse = {
   rawServiceProviders: [
     {
-      name: 'openmfp-system',
+      name: 'platform-mesh-system',
       displayName: '',
       creationTimestamp: '',
       contentConfiguration: [
         {
-          name: 'openmfp-system',
+          name: 'platform-mesh-system',
           creationTimestamp: '',
           luigiConfigFragment: {
             data: {
