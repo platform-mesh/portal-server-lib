@@ -29,7 +29,7 @@ describe('PMAuthConfigProvider', () => {
   it('should delegate to EnvAuthConfigService if available', async () => {
     const req = { hostname: 'foo.example.com' } as Request;
     const expected = {
-      idpName: 'foo',
+      idpName: 'idp',
       baseDomain: 'example.com',
       oauthServerUrl: 'url',
       oauthTokenUrl: 'token',
@@ -40,7 +40,14 @@ describe('PMAuthConfigProvider', () => {
 
     const result = await provider.getAuthConfig(req);
 
-    expect(result).toEqual(expected);
+    expect(result).toEqual({
+      idpName: 'foo',
+      baseDomain: 'example.com',
+      oauthServerUrl: 'url',
+      oauthTokenUrl: 'token',
+      clientId: 'cid',
+      clientSecret: 'sec',
+    });
   });
 
   it('should fall back to default configuration if EnvAuthConfigService throws', async () => {
