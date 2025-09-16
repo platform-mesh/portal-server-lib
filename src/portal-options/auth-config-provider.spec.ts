@@ -40,7 +40,14 @@ describe('PMAuthConfigProvider', () => {
 
     const result = await provider.getAuthConfig(req);
 
-    expect(result).toEqual(expected);
+    expect(result).toEqual({
+      idpName: 'foo',
+      baseDomain: 'example.com',
+      oauthServerUrl: 'url',
+      oauthTokenUrl: 'token',
+      clientId: 'cid',
+      clientSecret: 'sec',
+    });
   });
 
   it('should fall back to default configuration if EnvAuthConfigService throws', async () => {
