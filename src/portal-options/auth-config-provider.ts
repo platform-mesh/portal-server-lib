@@ -18,7 +18,15 @@ export class PMAuthConfigProvider implements AuthConfigService {
 
   async getAuthConfig(request: Request): Promise<ServerAuthVariables> {
     try {
-      return await this.envEuthConfigService.getAuthConfig(request);
+      const authConfig = await this.envEuthConfigService.getAuthConfig(request);
+      const subDomain = request.hostname.split('.')[0];
+      return {
+        ...authConfig,
+        idpName:
+          request.hostname === authConfig.baseDomain
+            ? authConfig.idpName
+            : subDomain,
+      };
     } catch {
       this.logger.debug(
         'Failed to retrieve auth config from environment variables based on provided IDP.',

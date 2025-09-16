@@ -29,7 +29,7 @@ describe('PMAuthConfigProvider', () => {
   it('should delegate to EnvAuthConfigService if available', async () => {
     const req = { hostname: 'foo.example.com' } as Request;
     const expected = {
-      idpName: 'idp',
+      idpName: 'foo',
       baseDomain: 'example.com',
       oauthServerUrl: 'url',
       oauthTokenUrl: 'token',
