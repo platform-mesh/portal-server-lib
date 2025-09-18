@@ -44,6 +44,8 @@ export class ContentConfigurationServiceProvidersService
       url = url.replace('/graphql', `:${context.account}/graphql`);
     }
 
+    console.log(`Calculated crd gateway api url: ${url}`);
+
     const client = new GraphQLClient(url, {
       headers: {
         Authorization: `Bearer ${token}`,
