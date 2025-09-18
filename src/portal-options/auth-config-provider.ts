@@ -3,6 +3,7 @@ import {
   AuthConfigService,
   DiscoveryService,
   EnvAuthConfigService,
+  EnvService,
   ServerAuthVariables,
 } from '@openmfp/portal-server-lib';
 import type { Request } from 'express';
@@ -14,6 +15,7 @@ export class PMAuthConfigProvider implements AuthConfigService {
   constructor(
     private discoveryService: DiscoveryService,
     private envEuthConfigService: EnvAuthConfigService,
+    private envService: EnvService,
   ) {}
 
   async getAuthConfig(request: Request): Promise<ServerAuthVariables> {
@@ -75,6 +77,15 @@ export class PMAuthConfigProvider implements AuthConfigService {
     const subDomain = request.hostname.split('.')[0];
     const clientId = process.env['OIDC_CLIENT_ID_DEFAULT'];
     const baseDomain = process.env['BASE_DOMAINS_DEFAULT'];
+
+    const { isLocal } = this.envService.getEnv();
+    if (isLocal) {
+      return {
+        organization: 'openmfp',
+        baseDomain: request.hostname,
+      };
+    }
+
     return {
       organization: request.hostname === baseDomain ? clientId : subDomain,
       baseDomain,
