@@ -1,6 +1,9 @@
 import { RequestContext } from '../openmfp-request-context-provider.js';
 import { ContentConfigurationServiceProvidersService } from './content-configuration-service-providers.service.js';
+import { welcomeNodeConfig } from './models/welcome-node-config.js';
+import { EnvService } from '@openmfp/portal-server-lib';
 import { GraphQLClient } from 'graphql-request';
+import { mock } from 'jest-mock-extended';
 
 jest.mock('graphql-request', () => {
   return {
@@ -16,10 +19,13 @@ jest.mock('graphql-request', () => {
 describe('ContentConfigurationServiceProvidersService', () => {
   let service: ContentConfigurationServiceProvidersService;
   let mockClient: jest.Mocked<GraphQLClient>;
+  let mockEnvService: jest.Mocked<EnvService>;
   let context: RequestContext;
 
   beforeEach(() => {
-    service = new ContentConfigurationServiceProvidersService();
+    mockEnvService = mock();
+    mockEnvService.getEnv.mockReturnValue({ isLocal: false });
+    service = new ContentConfigurationServiceProvidersService(mockEnvService);
     mockClient = new GraphQLClient('') as any;
     (GraphQLClient as jest.Mock).mockReturnValue(mockClient);
     context = {
@@ -42,6 +48,17 @@ describe('ContentConfigurationServiceProvidersService', () => {
     await expect(
       service.getServiceProviders('token', ['entity'], badContext),
     ).rejects.toThrow('Context with organization is required');
+  });
+
+  it('throws if context organization is missing', async () => {
+    context.isSubDomain = false;
+    const result = await service.getServiceProviders(
+      'token',
+      ['entity'],
+      context,
+    );
+
+    expect(result).toEqual(welcomeNodeConfig);
   });
 
   it('returns parsed content configurations', async () => {

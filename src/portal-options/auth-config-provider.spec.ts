@@ -3,6 +3,7 @@ import { HttpException } from '@nestjs/common';
 import {
   DiscoveryService,
   EnvAuthConfigService,
+  EnvService,
 } from '@openmfp/portal-server-lib';
 import type { Request } from 'express';
 import { mock } from 'jest-mock-extended';
@@ -11,11 +12,18 @@ describe('PMAuthConfigProvider', () => {
   let provider: PMAuthConfigProvider;
   let discoveryService: jest.Mocked<DiscoveryService>;
   let envAuthConfigService: jest.Mocked<EnvAuthConfigService>;
+  let mockEnvService: jest.Mocked<EnvService>;
 
   beforeEach(() => {
     discoveryService = mock<DiscoveryService>();
     envAuthConfigService = mock<EnvAuthConfigService>();
-    provider = new PMAuthConfigProvider(discoveryService, envAuthConfigService);
+    mockEnvService = mock<EnvService>();
+    mockEnvService.getEnv.mockReturnValue({ isLocal: false });
+    provider = new PMAuthConfigProvider(
+      discoveryService,
+      envAuthConfigService,
+      mockEnvService,
+    );
     jest.resetModules();
     process.env = {
       AUTH_SERVER_URL_DEFAULT: 'authUrl',
@@ -93,6 +101,18 @@ describe('PMAuthConfigProvider', () => {
     expect(result).toEqual({
       organization: 'client123',
       baseDomain: 'example.com',
+    });
+  });
+
+  it('getDomain should return defaults for local developmentn', () => {
+    const req = { hostname: 'localhost' } as Request;
+    mockEnvService.getEnv.mockReturnValue({ isLocal: true });
+
+    const result = provider.getDomain(req);
+
+    expect(result).toEqual({
+      organization: 'openmfp',
+      baseDomain: 'localhost',
     });
   });
 });
