@@ -34,8 +34,10 @@ export class ContentConfigurationServiceProvidersService
       'kubernetes-graphql-gateway/root',
       'kubernetes-graphql-gateway/virtual-workspace/contentconfigurations/root',
     );
-    if (context?.account) {
-      url = url.replace('/graphql', `:${context.account}/graphql`);
+
+    const platformMeshAccountId = context?.['core_platform-mesh_io_account'];
+    if (platformMeshAccountId) {
+      url = url.replace('/graphql', `:${platformMeshAccountId}/graphql`);
     }
 
     console.log(`Calculated crd gateway api url: ${url}`);
