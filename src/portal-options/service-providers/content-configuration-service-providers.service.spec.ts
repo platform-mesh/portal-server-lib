@@ -45,7 +45,7 @@ describe('ContentConfigurationServiceProvidersService', () => {
     ).rejects.toThrow('Context with organization is required');
   });
 
-  it('throws if context organization is missing', async () => {
+  it('returns welcome node config when on the base domain', async () => {
     context.isSubDomain = false;
     const result = await service.getServiceProviders(
       'token',
