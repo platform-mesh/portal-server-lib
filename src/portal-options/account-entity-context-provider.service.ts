@@ -4,11 +4,11 @@ import { EntityContextProvider } from '@openmfp/portal-server-lib';
 @Injectable()
 export class AccountEntityContextProvider implements EntityContextProvider {
   async getContextValues(
-    token: string,
-    context?: Record<string, any>
+    _token: string,
+    context?: Record<string, any>,
   ): Promise<Record<string, any>> {
     return {
-      id: context.account,
+      id: context['core_platform-mesh_io_account'],
       policies: [
         'create',
         'delete',
