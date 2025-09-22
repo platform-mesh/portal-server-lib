@@ -118,7 +118,7 @@ describe('KubernetesServiceProvidersService', () => {
     );
 
     expect(capturedUrl).toContain(
-      '/clusters/root:orgs:acme:a1/apis/core.platform-mesh.io/v1alpha1/contentconfigurations',
+      '/clusters/root:orgs:acme:a1/apis/ui.platform-mesh.io/v1alpha1/contentconfigurations',
     );
   });
 

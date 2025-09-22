@@ -90,7 +90,7 @@ export class KubernetesServiceProvidersService
     requestContext: Record<string, any>,
   ) {
     const gvr = {
-      group: 'core.platform-mesh.io',
+      group: 'ui.platform-mesh.io',
       version: 'v1alpha1',
       plural: 'contentconfigurations',
       labelSelector: `ui.platform-mesh.io/entity=${entity}`,
