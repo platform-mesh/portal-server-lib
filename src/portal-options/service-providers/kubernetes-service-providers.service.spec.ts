@@ -42,6 +42,7 @@ describe('KubernetesServiceProvidersService', () => {
     const svc = new KubernetesServiceProvidersService();
     const res = await svc.getServiceProviders('token', [], {
       organization: 'org',
+      isSubDomain: true,
     });
     expect(res.rawServiceProviders).toEqual([]);
   });
@@ -76,6 +77,7 @@ describe('KubernetesServiceProvidersService', () => {
     const svc = new KubernetesServiceProvidersService();
     const res = await svc.getServiceProviders('token', ['main'], {
       organization: 'acme',
+      isSubDomain: true,
       account: 'a1',
     });
 
@@ -113,6 +115,7 @@ describe('KubernetesServiceProvidersService', () => {
     const svc = new KubernetesServiceProvidersService();
     const promise = svc.getServiceProviders('token', [], {
       organization: 'org',
+      isSubDomain: true,
     });
 
     await jest.advanceTimersByTimeAsync(1000);
@@ -120,7 +123,7 @@ describe('KubernetesServiceProvidersService', () => {
     const res = await promise;
     expect(res.rawServiceProviders).toEqual([
       {
-        name: 'openmfp-system',
+        name: 'platform-mesh-system',
         displayName: '',
         creationTimestamp: '',
         contentConfiguration: [],

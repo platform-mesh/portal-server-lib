@@ -105,7 +105,7 @@ export class ContentConfigurationServiceProvidersService
       return {
         rawServiceProviders: [
           {
-            name: 'openmfp-system',
+            name: 'platform-mesh',
             displayName: '',
             creationTimestamp: '',
             contentConfiguration: contentConfigurations,

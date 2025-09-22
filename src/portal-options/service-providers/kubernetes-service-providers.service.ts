@@ -1,3 +1,4 @@
+import { welcomeNodeConfig } from './models/welcome-node-config.js';
 import { CustomObjectsApi, KubeConfig } from '@kubernetes/client-node';
 import { PromiseMiddlewareWrapper } from '@kubernetes/client-node/dist/gen/middleware.js';
 import {
@@ -24,6 +25,19 @@ export class KubernetesServiceProvidersService
     entities: string[],
     context: Record<string, any>,
   ): Promise<ServiceProviderResponse> {
+    // Validate required parameters
+    if (!token) {
+      throw new Error('Token is required');
+    }
+
+    if (!context.isSubDomain) {
+      return welcomeNodeConfig;
+    }
+
+    if (!context?.organization) {
+      throw new Error('Context with organization is required');
+    }
+
     const entity = !entities || !entities.length ? 'main' : entities[0];
 
     let response;
@@ -62,7 +76,7 @@ export class KubernetesServiceProvidersService
     return {
       rawServiceProviders: [
         {
-          name: 'openmfp-system',
+          name: 'platform-mesh-system',
           displayName: '',
           creationTimestamp: '',
           contentConfiguration: contentConfigurations,
@@ -76,7 +90,7 @@ export class KubernetesServiceProvidersService
     requestContext: Record<string, any>,
   ) {
     const gvr = {
-      group: 'core.openmfp.io',
+      group: 'core.platform-mesh.io',
       version: 'v1alpha1',
       plural: 'contentconfigurations',
       labelSelector: `ui.platform-mesh.io/entity=${entity}`,
