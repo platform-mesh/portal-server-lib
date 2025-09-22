@@ -1,4 +1,5 @@
 import { KubernetesServiceProvidersService } from './kubernetes-service-providers.service.js';
+import { welcomeNodeConfig } from './models/welcome-node-config.js';
 
 const listClusterCustomObject = jest.fn();
 
@@ -32,6 +33,36 @@ describe('KubernetesServiceProvidersService', () => {
     jest.resetAllMocks();
   });
 
+  it('throws if token is missing', async () => {
+    const svc = new KubernetesServiceProvidersService();
+    await expect(
+      svc.getServiceProviders('', ['entity'], {
+        token: undefined,
+      }),
+    ).rejects.toThrow('Token is required');
+  });
+
+  it('throws if context organization is missing', async () => {
+    const svc = new KubernetesServiceProvidersService();
+    await expect(
+      svc.getServiceProviders('token', ['entity'], {
+        token: 'token',
+        organization: undefined,
+        isSubDomain: true,
+      }),
+    ).rejects.toThrow('Context with organization is required');
+  });
+
+  it('returns welcome node config when on the base domain', async () => {
+    const svc = new KubernetesServiceProvidersService();
+    const result = await svc.getServiceProviders('token', ['entity'], {
+      organization: undefined,
+      isSubDomain: false,
+    });
+
+    expect(result).toEqual(welcomeNodeConfig);
+  });
+
   it('should return empty list when API returns no items', async () => {
     listClusterCustomObject.mockImplementation(
       async (_gvr: any, _opts: any) => {
@@ -42,6 +73,7 @@ describe('KubernetesServiceProvidersService', () => {
     const svc = new KubernetesServiceProvidersService();
     const res = await svc.getServiceProviders('token', [], {
       organization: 'org',
+      isSubDomain: true,
     });
     expect(res.rawServiceProviders).toEqual([]);
   });
@@ -76,6 +108,7 @@ describe('KubernetesServiceProvidersService', () => {
     const svc = new KubernetesServiceProvidersService();
     const res = await svc.getServiceProviders('token', ['main'], {
       organization: 'acme',
+      isSubDomain: true,
       account: 'a1',
     });
 
@@ -85,7 +118,7 @@ describe('KubernetesServiceProvidersService', () => {
     );
 
     expect(capturedUrl).toContain(
-      '/clusters/root:orgs:acme:a1/apis/core.openmfp.io/v1alpha1/contentconfigurations',
+      '/clusters/root:orgs:acme:a1/apis/ui.platform-mesh.io/v1alpha1/contentconfigurations',
     );
   });
 
@@ -113,6 +146,7 @@ describe('KubernetesServiceProvidersService', () => {
     const svc = new KubernetesServiceProvidersService();
     const promise = svc.getServiceProviders('token', [], {
       organization: 'org',
+      isSubDomain: true,
     });
 
     await jest.advanceTimersByTimeAsync(1000);
@@ -120,7 +154,7 @@ describe('KubernetesServiceProvidersService', () => {
     const res = await promise;
     expect(res.rawServiceProviders).toEqual([
       {
-        name: 'openmfp-system',
+        name: 'platform-mesh-system',
         displayName: '',
         creationTimestamp: '',
         contentConfiguration: [],
