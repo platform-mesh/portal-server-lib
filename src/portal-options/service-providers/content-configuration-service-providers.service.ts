@@ -105,7 +105,7 @@ export class ContentConfigurationServiceProvidersService
       return {
         rawServiceProviders: [
           {
-            name: 'platform-mesh',
+            name: 'platform-mesh-system',
             displayName: '',
             creationTimestamp: '',
             contentConfiguration: contentConfigurations,
