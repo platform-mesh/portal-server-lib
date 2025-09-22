@@ -1,6 +1,6 @@
 ## Overview
 
-# Contributing to platfrom-mesh
+# Contributing to platform-mesh
 
 We want to make contributing to this project as easy and transparent as possible.
 
