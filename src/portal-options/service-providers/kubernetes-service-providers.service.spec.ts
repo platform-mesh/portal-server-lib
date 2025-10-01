@@ -6,12 +6,16 @@ const listClusterCustomObject = jest.fn();
 jest.mock('@kubernetes/client-node', () => {
   class KubeConfig {
     loadFromDefault = jest.fn();
-    getCurrentCluster = jest
-      .fn()
-      .mockReturnValue({ server: 'https://k8s.example.com/base' });
+    getCurrentCluster = jest.fn().mockReturnValue({
+      server: 'https://k8s.example.com/base',
+      name: 'test-cluster',
+    });
     makeApiClient = jest.fn().mockImplementation(() => ({
       listClusterCustomObject,
     }));
+    addUser = jest.fn();
+    addContext = jest.fn();
+    setCurrentContext = jest.fn();
   }
   class CustomObjectsApi {}
   return { KubeConfig, CustomObjectsApi };
@@ -80,17 +84,18 @@ describe('KubernetesServiceProvidersService', () => {
 
   it('should map items to contentConfiguration and fill url from spec when missing', async () => {
     let capturedUrl = '';
+    const ctx = {
+      _url: 'https://k8s.example.com/base',
+      getUrl() {
+        return this._url;
+      },
+      setUrl(u: string) {
+        this._url = u;
+      },
+      setHeaderParam: jest.fn(),
+    };
     listClusterCustomObject.mockImplementation(async (_gvr: any, opts: any) => {
       const mw = opts?.middleware?.[0];
-      const ctx = {
-        _url: 'https://k8s.example.com/base',
-        getUrl() {
-          return this._url;
-        },
-        setUrl(u: string) {
-          this._url = u;
-        },
-      };
       if (mw?.pre) await mw.pre(ctx);
       capturedUrl = ctx._url;
       return {
@@ -119,6 +124,10 @@ describe('KubernetesServiceProvidersService', () => {
 
     expect(capturedUrl).toContain(
       '/clusters/root:orgs:acme:a1/apis/ui.platform-mesh.io/v1alpha1/contentconfigurations',
+    );
+    expect(ctx.setHeaderParam).toHaveBeenCalledWith(
+      'Authorization',
+      `Bearer token`,
     );
   });
 
