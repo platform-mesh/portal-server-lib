@@ -15,7 +15,8 @@ export class KubernetesServiceProvidersService
 
   constructor() {
     const kc = new KubeConfig();
-    kc.loadFromDefault();
+    const kubeConfigKcp = process.env['KUBECONFIG_KCP'];
+    kc.loadFromFile(kubeConfigKcp);
     this.baseUrl = new URL(kc.getCurrentCluster()?.server || '');
     this.k8sApi = kc.makeApiClient(CustomObjectsApi);
   }
