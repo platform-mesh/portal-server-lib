@@ -8,10 +8,13 @@ jest.mock('@kubernetes/client-node', () => {
     loadFromDefault = jest.fn();
     getCurrentCluster = jest
       .fn()
-      .mockReturnValue({ server: 'https://k8s.example.com/base' });
+      .mockReturnValue({ server: 'https://k8s.example.com/base', name: 'test-cluster' });
     makeApiClient = jest.fn().mockImplementation(() => ({
       listClusterCustomObject,
     }));
+    addUser = jest.fn();
+    addContext = jest.fn();
+    setCurrentContext = jest.fn();
   }
   class CustomObjectsApi {}
   return { KubeConfig, CustomObjectsApi };
