@@ -14,9 +14,19 @@ export class KubernetesServiceProvidersService
   private baseUrl: URL;
 
   constructor() {
-    const kc = new KubeConfig();
     const kubeConfigKcp = process.env['KUBECONFIG_KCP'];
+    const kc = new KubeConfig();
     kc.loadFromFile(kubeConfigKcp);
+    // Temporary change to test.
+    kc.addUser({
+      name: 'oidc',
+    });
+    kc.addContext({
+      name: 'oidc',
+      user: 'oidc',
+      cluster: kc.getCurrentCluster()?.name || '',
+    });
+    kc.setCurrentContext('oidc');
     this.baseUrl = new URL(kc.getCurrentCluster()?.server || '');
     this.k8sApi = kc.makeApiClient(CustomObjectsApi);
   }
@@ -43,14 +53,14 @@ export class KubernetesServiceProvidersService
 
     let response;
     try {
-      response = await this.getKubernetesResources(entity, context);
+      response = await this.getKubernetesResources(entity, context, token);
     } catch (error) {
       console.error(error);
 
       if (error.code == 429 || error.statusCode == 429) {
         await new Promise((resolve) => setTimeout(resolve, 1000));
         console.log('Retry after 1 second reading kubernetes resources.');
-        response = await this.getKubernetesResources(entity, context);
+        response = await this.getKubernetesResources(entity, context, token);
       }
     }
 
@@ -89,6 +99,7 @@ export class KubernetesServiceProvidersService
   private async getKubernetesResources(
     entity: string,
     requestContext: Record<string, any>,
+    token: string,
   ) {
     const gvr = {
       group: 'ui.platform-mesh.io',
@@ -110,6 +121,8 @@ export class KubernetesServiceProvidersService
 
             url.pathname = path;
             context.setUrl(url.toString());
+            context.setHeaderParam('Authorization', `Bearer ${token}`);
+
             return context;
           },
           post: async (context) => context,
