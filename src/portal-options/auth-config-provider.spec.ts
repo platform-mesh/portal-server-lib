@@ -15,7 +15,7 @@ describe('PMAuthConfigProvider', () => {
   beforeEach(() => {
     discoveryService = mock<DiscoveryService>();
     envAuthConfigService = mock<EnvAuthConfigService>();
-    provider = new PMAuthConfigProvider(discoveryService, envAuthConfigService);
+    provider = new PMAuthConfigProvider(discoveryService);
     jest.resetModules();
     process.env = {
       AUTH_SERVER_URL_DEFAULT: 'authUrl',

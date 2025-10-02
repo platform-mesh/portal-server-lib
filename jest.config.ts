@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-require-imports */
-const baseConfig = require('./base.jest.config.cjs');
+import baseConfig from './base.jest.config.js';
 
-module.exports = {
+export default {
   ...baseConfig,
   rootDir: 'src',
   testRegex: '.spec.ts$',

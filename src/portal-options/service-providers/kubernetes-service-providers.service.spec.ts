@@ -6,6 +6,7 @@ const listClusterCustomObject = jest.fn();
 jest.mock('@kubernetes/client-node', () => {
   class KubeConfig {
     loadFromDefault = jest.fn();
+    loadFromFile = jest.fn();
     getCurrentCluster = jest.fn().mockReturnValue({
       server: 'https://k8s.example.com/base',
       name: 'test-cluster',
@@ -114,7 +115,7 @@ describe('KubernetesServiceProvidersService', () => {
     const res = await svc.getServiceProviders('token', ['main'], {
       organization: 'acme',
       isSubDomain: true,
-      account: 'a1',
+      'core_platform-mesh_io_account': 'a1',
     });
 
     expect(res.rawServiceProviders[0].contentConfiguration).toHaveLength(1);

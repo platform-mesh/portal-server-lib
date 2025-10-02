@@ -114,10 +114,13 @@ export class KubernetesServiceProvidersService
             const url = new URL(context.getUrl());
 
             let path = `${this.baseUrl.pathname}/clusters/root:orgs:${requestContext.organization}`;
-            if (requestContext?.account) {
-              path += `:${requestContext.account}`; // FIXME: how are nested accounts and paths handled in the portal?
+            if (requestContext?.['core_platform-mesh_io_account']) {
+              path += `:${requestContext['core_platform-mesh_io_account']}`; // FIXME: how are nested accounts and paths handled in the portal?
             }
             path += `/apis/${gvr.group}/${gvr.version}/${gvr.plural}`;
+
+            console.log(entity);
+            console.log(path);
 
             url.pathname = path;
             context.setUrl(url.toString());
