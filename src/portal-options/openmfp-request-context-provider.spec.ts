@@ -4,6 +4,23 @@ import { RequestContextProviderImpl } from './openmfp-request-context-provider.j
 import type { Request } from 'express';
 import { mock } from 'jest-mock-extended';
 
+jest.mock('@kubernetes/client-node', () => {
+  class KubeConfig {
+    loadFromDefault = jest.fn();
+    loadFromFile = jest.fn();
+    getCurrentCluster = jest.fn().mockReturnValue({
+      server: 'https://k8s.example.com/base',
+      name: 'test-cluster',
+    });
+    makeApiClient = jest.fn();
+    addUser = jest.fn();
+    addContext = jest.fn();
+    setCurrentContext = jest.fn();
+  }
+  class CustomObjectsApi {}
+  return { KubeConfig, CustomObjectsApi };
+});
+
 describe('RequestContextProviderImpl', () => {
   let provider: RequestContextProviderImpl;
   const pmAuthConfigProviderMock = mock<PMAuthConfigProvider>();
