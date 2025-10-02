@@ -4,6 +4,23 @@ import { MUTATION_LOGIN } from './queries.js';
 import { GraphQLClient } from 'graphql-request';
 import { mock } from 'jest-mock-extended';
 
+jest.mock('@kubernetes/client-node', () => {
+  class KubeConfig {
+    loadFromDefault = jest.fn();
+    loadFromFile = jest.fn();
+    getCurrentCluster = jest.fn().mockReturnValue({
+      server: 'https://k8s.example.com/base',
+      name: 'test-cluster',
+    });
+    makeApiClient = jest.fn();
+    addUser = jest.fn();
+    addContext = jest.fn();
+    setCurrentContext = jest.fn();
+  }
+  class CustomObjectsApi {}
+  return { KubeConfig, CustomObjectsApi };
+});
+
 describe('IAMGraphQlService', () => {
   const mockIamServiceApiUrl = 'http://localhost:8080/query';
   let service: IAMGraphQlService;

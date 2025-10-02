@@ -7,6 +7,23 @@ import {
 import type { Request } from 'express';
 import { mock } from 'jest-mock-extended';
 
+jest.mock('@kubernetes/client-node', () => {
+  class KubeConfig {
+    loadFromDefault = jest.fn();
+    loadFromFile = jest.fn();
+    getCurrentCluster = jest.fn().mockReturnValue({
+      server: 'https://k8s.example.com/base',
+      name: 'test-cluster',
+    });
+    makeApiClient = jest.fn();
+    addUser = jest.fn();
+    addContext = jest.fn();
+    setCurrentContext = jest.fn();
+  }
+  class CustomObjectsApi {}
+  return { KubeConfig, CustomObjectsApi };
+});
+
 describe('PMAuthConfigProvider', () => {
   let provider: PMAuthConfigProvider;
   let discoveryService: jest.Mocked<DiscoveryService>;
@@ -15,7 +32,7 @@ describe('PMAuthConfigProvider', () => {
   beforeEach(() => {
     discoveryService = mock<DiscoveryService>();
     envAuthConfigService = mock<EnvAuthConfigService>();
-    provider = new PMAuthConfigProvider(discoveryService, envAuthConfigService);
+    provider = new PMAuthConfigProvider(discoveryService);
     jest.resetModules();
     process.env = {
       AUTH_SERVER_URL_DEFAULT: 'authUrl',
@@ -24,6 +41,7 @@ describe('PMAuthConfigProvider', () => {
       OIDC_CLIENT_ID_DEFAULT: 'client123',
       OIDC_CLIENT_SECRET_DEFAULT: 'secret123',
     };
+    provider['getClientSecret'] = jest.fn().mockResolvedValue('secret');
   });
 
   it('should delegate to EnvAuthConfigService if available', async () => {
@@ -34,19 +52,19 @@ describe('PMAuthConfigProvider', () => {
       oauthServerUrl: 'url',
       oauthTokenUrl: 'token',
       clientId: 'cid',
-      clientSecret: 'sec',
+      clientSecret: 'secret',
     };
     envAuthConfigService.getAuthConfig.mockResolvedValue(expected);
 
     const result = await provider.getAuthConfig(req);
 
     expect(result).toEqual({
-      idpName: 'foo',
       baseDomain: 'example.com',
-      oauthServerUrl: 'url',
-      oauthTokenUrl: 'token',
-      clientId: 'cid',
-      clientSecret: 'sec',
+      clientId: 'foo',
+      clientSecret: 'secret',
+      idpName: 'foo',
+      oauthServerUrl: 'authUrl',
+      oauthTokenUrl: 'tokenUrl',
     });
   });
 
@@ -64,8 +82,8 @@ describe('PMAuthConfigProvider', () => {
       baseDomain: 'example.com',
       oauthServerUrl: 'authUrl',
       oauthTokenUrl: 'tokenUrl',
-      clientId: 'client123',
-      clientSecret: 'secret123',
+      clientId: 'foo',
+      clientSecret: 'secret',
     });
   });
 

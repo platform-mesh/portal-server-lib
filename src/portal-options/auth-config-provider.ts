@@ -1,57 +1,49 @@
-import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
+import { CoreV1Api, KubeConfig } from '@kubernetes/client-node';
+import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import {
   AuthConfigService,
   DiscoveryService,
-  EnvAuthConfigService,
   ServerAuthVariables,
 } from '@openmfp/portal-server-lib';
 import type { Request } from 'express';
 
 @Injectable()
 export class PMAuthConfigProvider implements AuthConfigService {
-  private logger: Logger = new Logger(PMAuthConfigProvider.name);
+  private k8sApi: CoreV1Api;
 
-  constructor(
-    private discoveryService: DiscoveryService,
-    private envEuthConfigService: EnvAuthConfigService,
-  ) {}
+  constructor(private discoveryService: DiscoveryService) {
+    const kc = new KubeConfig();
+    kc.loadFromDefault();
+    this.k8sApi = kc.makeApiClient(CoreV1Api);
+  }
 
   async getAuthConfig(request: Request): Promise<ServerAuthVariables> {
-    try {
-      const authConfig = await this.envEuthConfigService.getAuthConfig(request);
-      const subDomain = request.hostname.split('.')[0];
-      return {
-        ...authConfig,
-        idpName:
-          request.hostname === authConfig.baseDomain
-            ? authConfig.idpName
-            : subDomain,
-      };
-    } catch {
-      this.logger.debug(
-        'Failed to retrieve auth config from environment variables based on provided IDP.',
-      );
-    }
+    const baseDomain = process.env['BASE_DOMAINS_DEFAULT'];
 
-    this.logger.debug('Resolving auth config from default configuration.');
+    const subDomain = request.hostname.split('.')[0];
+    const isSubdomain = request.hostname !== baseDomain;
 
-    const oidc = await this.discoveryService.getOIDC('DEFAULT');
+    const clientId = isSubdomain
+      ? subDomain
+      : process.env['OIDC_CLIENT_ID_DEFAULT'];
+    const clientSecret = await this.getClientSecret(clientId);
+
+    const oidcUrl = process.env[`DISCOVERY_ENDPOINT`]?.replace(
+      '${org-name}',
+      clientId,
+    );
+    const oidc = await this.discoveryService.getOIDC(oidcUrl);
     const oauthServerUrl =
       oidc?.authorization_endpoint ?? process.env['AUTH_SERVER_URL_DEFAULT'];
     const oauthTokenUrl =
       oidc?.token_endpoint ?? process.env['TOKEN_URL_DEFAULT'];
-
-    const baseDomain = process.env['BASE_DOMAINS_DEFAULT'];
-    const clientId = process.env['OIDC_CLIENT_ID_DEFAULT'];
-    const clientSecretEnvVar = 'OIDC_CLIENT_SECRET_DEFAULT';
-    const clientSecret = process.env[clientSecretEnvVar];
 
     if (!oauthServerUrl || !oauthTokenUrl || !clientId || !clientSecret) {
       const hasClientSecret = !!clientSecret;
       throw new HttpException(
         {
           message: 'Default auth configuration incomplete.',
-          error: `The default properly configured. oauthServerUrl: '${oauthServerUrl}' oauthTokenUrl: '${oauthTokenUrl}' clientId: '${clientId}', has client secret (${clientSecretEnvVar}): ${String(
+          error: `The default properly configured. oauthServerUrl: '${oauthServerUrl}' oauthTokenUrl: '${oauthTokenUrl}' clientId: '${clientId}', has client secret: ${String(
             hasClientSecret,
           )}`,
           statusCode: HttpStatus.NOT_FOUND,
@@ -60,9 +52,8 @@ export class PMAuthConfigProvider implements AuthConfigService {
       );
     }
 
-    const subDomain = request.hostname.split('.')[0];
     return {
-      idpName: request.hostname === baseDomain ? clientId : subDomain,
+      idpName: clientId,
       baseDomain,
       oauthServerUrl,
       clientId,
@@ -79,5 +70,30 @@ export class PMAuthConfigProvider implements AuthConfigService {
       organization: request.hostname === baseDomain ? clientId : subDomain,
       baseDomain,
     };
+  }
+
+  private async getClientSecret(orgName: string) {
+    const secretName = `portal-client-secret-${orgName}`;
+    const namespace = 'platform-mesh-system';
+
+    try {
+      const res = await this.k8sApi.readNamespacedSecret({
+        namespace,
+        name: secretName,
+      });
+      const secretData = res.data;
+
+      const clientSecret = Buffer.from(
+        secretData['attribute.client_secret'],
+        'base64',
+      ).toString('utf-8');
+      return clientSecret;
+    } catch (err) {
+      console.error(
+        `Failed to fetch secret ${secretName}:`,
+        err.response?.body || err,
+      );
+      throw err;
+    }
   }
 }

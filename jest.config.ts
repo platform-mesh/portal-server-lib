@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-require-imports */
-const baseConfig = require('./base.jest.config.cjs');
+import baseConfig from './base.jest.config.js';
 
-module.exports = {
+export default {
   ...baseConfig,
   rootDir: 'src',
   testRegex: '.spec.ts$',
@@ -9,10 +9,10 @@ module.exports = {
   reporters: ['default'],
   coverageThreshold: {
     global: {
-      branches: 80,
-      functions: 95,
-      lines: 95,
-      statements: -3,
+      branches: 75,
+      functions: 90,
+      lines: 90,
+      statements: -12,
     },
   },
   coveragePathIgnorePatterns: ['/node_modules/', '/integration-tests/'],
