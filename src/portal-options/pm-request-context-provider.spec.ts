@@ -1,6 +1,6 @@
 import { PMAuthConfigProvider } from './auth-config-provider.js';
-import { OpenmfpPortalContextService } from './openmfp-portal-context.service.js';
-import { RequestContextProviderImpl } from './openmfp-request-context-provider.js';
+import { PMPortalContextService } from './pm-portal-context.service.js';
+import { PMRequestContextProvider } from './pm-request-context-provider.js';
 import type { Request } from 'express';
 import { mock } from 'jest-mock-extended';
 
@@ -21,10 +21,10 @@ jest.mock('@kubernetes/client-node', () => {
   return { KubeConfig, CustomObjectsApi };
 });
 
-describe('RequestContextProviderImpl', () => {
-  let provider: RequestContextProviderImpl;
+describe('PMRequestContextProvider', () => {
+  let provider: PMRequestContextProvider;
   const pmAuthConfigProviderMock = mock<PMAuthConfigProvider>();
-  const portalContext = mock<OpenmfpPortalContextService>();
+  const portalContext = mock<PMPortalContextService>();
 
   beforeEach(() => {
     jest.resetAllMocks();
@@ -39,7 +39,7 @@ describe('RequestContextProviderImpl', () => {
       other: 'x',
     });
 
-    provider = new RequestContextProviderImpl(
+    provider = new PMRequestContextProvider(
       pmAuthConfigProviderMock,
       portalContext,
     );

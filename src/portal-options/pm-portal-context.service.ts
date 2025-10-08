@@ -1,14 +1,15 @@
-import { PMAuthConfigProvider } from './auth-config-provider.js';
+import { KcpKubernetesService } from './services/kcp-k8s.service.js';
+import { getDomainAndOrganization } from './utils/domain.js';
 import { Injectable } from '@nestjs/common';
 import { PortalContextProvider } from '@openmfp/portal-server-lib';
 import type { Request } from 'express';
 import process from 'node:process';
 
 @Injectable()
-export class OpenmfpPortalContextService implements PortalContextProvider {
+export class PMPortalContextService implements PortalContextProvider {
   private readonly openmfpPortalContext = 'OPENMFP_PORTAL_CONTEXT_';
 
-  constructor(private authConfigProvider: PMAuthConfigProvider) {}
+  constructor(private kcpKubernetesService: KcpKubernetesService) {}
 
   getContextValues(request: Request): Promise<Record<string, any>> {
     const portalContext: Record<string, any> = {};
@@ -25,14 +26,24 @@ export class OpenmfpPortalContextService implements PortalContextProvider {
     });
 
     this.processGraphQLGatewayApiUrl(request, portalContext);
+    this.addKcpWorkspaceUrl(request, portalContext);
     return Promise.resolve(portalContext);
+  }
+
+  private addKcpWorkspaceUrl(request, portalContext) {
+    const { organization } = getDomainAndOrganization(request);
+    const account = request.query?.['core_platform-mesh_io_account'];
+
+    portalContext.kcpWorkspaceUrl = this.kcpKubernetesService
+      .getKcpWorkspaceUrl(organization, account)
+      .toString();
   }
 
   private processGraphQLGatewayApiUrl(
     request: Request,
     portalContext: Record<string, any>,
   ): void {
-    const org = this.authConfigProvider.getDomain(request);
+    const org = getDomainAndOrganization(request);
     const subDomain =
       request.hostname === org.baseDomain ? '' : `${org.organization}.`;
     portalContext.crdGatewayApiUrl = portalContext.crdGatewayApiUrl

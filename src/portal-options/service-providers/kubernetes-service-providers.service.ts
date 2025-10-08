@@ -1,35 +1,18 @@
+import { KcpKubernetesService } from '../services/kcp-k8s.service.js';
 import { welcomeNodeConfig } from './models/welcome-node-config.js';
-import { CustomObjectsApi, KubeConfig } from '@kubernetes/client-node';
 import { PromiseMiddlewareWrapper } from '@kubernetes/client-node/dist/gen/middleware.js';
+import { Injectable } from '@nestjs/common';
 import {
   ContentConfiguration,
   ServiceProviderResponse,
   ServiceProviderService,
 } from '@openmfp/portal-server-lib';
 
+@Injectable()
 export class KubernetesServiceProvidersService
   implements ServiceProviderService
 {
-  private k8sApi: CustomObjectsApi;
-  private baseUrl: URL;
-
-  constructor() {
-    const kubeConfigKcp = process.env['KUBECONFIG_KCP'];
-    const kc = new KubeConfig();
-    kc.loadFromFile(kubeConfigKcp);
-    // Temporary change to test.
-    kc.addUser({
-      name: 'oidc',
-    });
-    kc.addContext({
-      name: 'oidc',
-      user: 'oidc',
-      cluster: kc.getCurrentCluster()?.name || '',
-    });
-    kc.setCurrentContext('oidc');
-    this.baseUrl = new URL(kc.getCurrentCluster()?.server || '');
-    this.k8sApi = kc.makeApiClient(CustomObjectsApi);
-  }
+  constructor(private kcpKubernetesService: KcpKubernetesService) {}
 
   async getServiceProviders(
     token: string,
@@ -107,25 +90,21 @@ export class KubernetesServiceProvidersService
       plural: 'contentconfigurations',
       labelSelector: `ui.platform-mesh.io/entity=${entity}`,
     };
-    return await this.k8sApi.listClusterCustomObject(gvr, {
+
+    const k8sApi = this.kcpKubernetesService.getKcpK8sApiClient();
+    return await k8sApi.listClusterCustomObject(gvr, {
       middleware: [
         new PromiseMiddlewareWrapper({
           pre: async (context) => {
-            const url = new URL(context.getUrl());
+            const kcpUrl =
+              this.kcpKubernetesService.getKcpWorkspaceUrlForContentConfiguration(
+                requestContext.organization,
+                requestContext?.['core_platform-mesh_io_account'],
+              );
+            const path = `${kcpUrl}/apis/${gvr.group}/${gvr.version}/${gvr.plural}`;
 
-            let path = `${this.baseUrl.pathname}/clusters/root:orgs:${requestContext.organization}`;
-            if (requestContext?.['core_platform-mesh_io_account']) {
-              path += `:${requestContext['core_platform-mesh_io_account']}`; // FIXME: how are nested accounts and paths handled in the portal?
-            }
-            path += `/apis/${gvr.group}/${gvr.version}/${gvr.plural}`;
-
-            console.log(entity);
-            console.log(path);
-
-            url.pathname = path;
-            context.setUrl(url.toString());
+            context.setUrl(path);
             context.setHeaderParam('Authorization', `Bearer ${token}`);
-
             return context;
           },
           post: async (context) => context,

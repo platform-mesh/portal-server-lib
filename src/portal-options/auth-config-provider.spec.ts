@@ -98,7 +98,7 @@ describe('PMAuthConfigProvider', () => {
 
   it('getDomain should return organization and baseDomain', () => {
     const req = { hostname: 'foo.example.com' } as Request;
-    const result = provider.getDomain(req);
+    const result = provider.getDomainAndOrganization(req);
     expect(result).toEqual({
       organization: 'foo',
       baseDomain: 'example.com',
@@ -107,7 +107,7 @@ describe('PMAuthConfigProvider', () => {
 
   it('getDomain should return clientId if hostname equals baseDomain', () => {
     const req = { hostname: 'example.com' } as Request;
-    const result = provider.getDomain(req);
+    const result = provider.getDomainAndOrganization(req);
     expect(result).toEqual({
       organization: 'client123',
       baseDomain: 'example.com',

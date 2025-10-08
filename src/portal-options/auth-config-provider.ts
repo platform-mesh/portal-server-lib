@@ -55,20 +55,12 @@ export class PMAuthConfigProvider implements AuthConfigService {
     return {
       idpName: clientId,
       baseDomain,
-      oauthServerUrl,
       clientId,
       clientSecret,
+      oauthServerUrl,
       oauthTokenUrl,
-    };
-  }
-
-  getDomain(request: Request): { organization?: string; baseDomain?: string } {
-    const subDomain = request.hostname.split('.')[0];
-    const clientId = process.env['OIDC_CLIENT_ID_DEFAULT'];
-    const baseDomain = process.env['BASE_DOMAINS_DEFAULT'];
-    return {
-      organization: request.hostname === baseDomain ? clientId : subDomain,
-      baseDomain,
+      // @ts-ignore
+      oidcIssuerUrl: oidc.issuer,
     };
   }
 

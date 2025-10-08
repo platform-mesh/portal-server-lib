@@ -1,4 +1,4 @@
-import { RequestContextProviderImpl } from '../openmfp-request-context-provider.js';
+import { PMRequestContextProvider } from '../pm-request-context-provider.js';
 import { IAMGraphQlService } from './iam-graphql.service.js';
 import { MUTATION_LOGIN } from './queries.js';
 import { GraphQLClient } from 'graphql-request';
@@ -28,7 +28,7 @@ describe('IAMGraphQlService', () => {
     request: jest.fn(),
   } as unknown as GraphQLClient;
 
-  const requestContextProvider = mock<RequestContextProviderImpl>({
+  const requestContextProvider = mock<PMRequestContextProvider>({
     getContextValues: jest
       .fn()
       .mockResolvedValue({ iamServiceApiUrl: mockIamServiceApiUrl }),
