@@ -36,7 +36,7 @@ export class PMPortalContextService implements PortalContextProvider {
 
     portalContext.kcpWorkspaceUrl = this.kcpKubernetesService
       .getKcpWorkspaceUrl(organization, account)
-      .toString();
+      ?.toString();
   }
 
   private processGraphQLGatewayApiUrl(

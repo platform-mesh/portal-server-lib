@@ -59,7 +59,7 @@ export class PMAuthConfigProvider implements AuthConfigService {
       clientSecret,
       oauthServerUrl,
       oauthTokenUrl,
-      oidcIssuerUrl: oidc.issuer,
+      oidcIssuerUrl: oidc?.issuer,
     };
   }
 
