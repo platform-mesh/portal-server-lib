@@ -59,7 +59,6 @@ export class PMAuthConfigProvider implements AuthConfigService {
       clientSecret,
       oauthServerUrl,
       oauthTokenUrl,
-      // @ts-ignore
       oidcIssuerUrl: oidc.issuer,
     };
   }
@@ -75,11 +74,10 @@ export class PMAuthConfigProvider implements AuthConfigService {
       });
       const secretData = res.data;
 
-      const clientSecret = Buffer.from(
+      return Buffer.from(
         secretData['attribute.client_secret'],
         'base64',
       ).toString('utf-8');
-      return clientSecret;
     } catch (err) {
       console.error(
         `Failed to fetch secret ${secretName}:`,

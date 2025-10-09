@@ -36,12 +36,11 @@ export class KcpKubernetesService {
     return path;
   }
 
-  getKcpWorkspaceUrlForContentConfiguration(
-    organization: string,
-    account: string,
-  ) {
+  getKcpVirtualWorkspaceUrl(organization: string, account: string) {
     const path = this.buildWorkspacePath(organization, account);
-    return new URL(`${this.baseUrl}/clusters/${path}`);
+    return new URL(
+      `${this.baseUrl.origin}/services/contentconfigurations/clusters/${path}`,
+    );
   }
 
   getKcpWorkspaceUrl(organization: string, account: string) {

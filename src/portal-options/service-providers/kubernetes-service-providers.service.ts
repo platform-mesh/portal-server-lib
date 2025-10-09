@@ -96,12 +96,12 @@ export class KubernetesServiceProvidersService
       middleware: [
         new PromiseMiddlewareWrapper({
           pre: async (context) => {
-            const kcpUrl =
-              this.kcpKubernetesService.getKcpWorkspaceUrlForContentConfiguration(
-                requestContext.organization,
-                requestContext?.['core_platform-mesh_io_account'],
-              );
+            const kcpUrl = this.kcpKubernetesService.getKcpVirtualWorkspaceUrl(
+              requestContext.organization,
+              requestContext?.['core_platform-mesh_io_account'],
+            );
             const path = `${kcpUrl}/apis/${gvr.group}/${gvr.version}/${gvr.plural}`;
+            console.log('kcp url: ', path);
 
             context.setUrl(path);
             context.setHeaderParam('Authorization', `Bearer ${token}`);
