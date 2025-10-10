@@ -1,4 +1,4 @@
-import { RequestContext } from '../openmfp-request-context-provider.js';
+import { RequestContext } from '../pm-request-context-provider.js';
 import { ContentConfigurationServiceProvidersService } from './content-configuration-service-providers.service.js';
 import { welcomeNodeConfig } from './models/welcome-node-config.js';
 import { EnvService } from '@openmfp/portal-server-lib';
@@ -48,6 +48,17 @@ describe('ContentConfigurationServiceProvidersService', () => {
     await expect(
       service.getServiceProviders('token', ['entity'], badContext),
     ).rejects.toThrow('Context with organization is required');
+  });
+
+  it('returns welcome node config when on the base domain', async () => {
+    context.isSubDomain = false;
+    const result = await service.getServiceProviders(
+      'token',
+      ['entity'],
+      context,
+    );
+
+    expect(result).toEqual(welcomeNodeConfig);
   });
 
   it('throws if context organization is missing', async () => {

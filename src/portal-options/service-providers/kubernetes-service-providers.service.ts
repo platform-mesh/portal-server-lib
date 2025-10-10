@@ -1,41 +1,49 @@
-import { CustomObjectsApi, KubeConfig } from '@kubernetes/client-node';
+import { KcpKubernetesService } from '../services/kcp-k8s.service.js';
+import { welcomeNodeConfig } from './models/welcome-node-config.js';
 import { PromiseMiddlewareWrapper } from '@kubernetes/client-node/dist/gen/middleware.js';
+import { Injectable } from '@nestjs/common';
 import {
   ContentConfiguration,
   ServiceProviderResponse,
   ServiceProviderService,
 } from '@openmfp/portal-server-lib';
 
+@Injectable()
 export class KubernetesServiceProvidersService
   implements ServiceProviderService
 {
-  private k8sApi: CustomObjectsApi;
-  private baseUrl: URL;
-
-  constructor() {
-    const kc = new KubeConfig();
-    kc.loadFromDefault();
-    this.baseUrl = new URL(kc.getCurrentCluster()?.server || '');
-    this.k8sApi = kc.makeApiClient(CustomObjectsApi);
-  }
+  constructor(private kcpKubernetesService: KcpKubernetesService) {}
 
   async getServiceProviders(
     token: string,
     entities: string[],
     context: Record<string, any>,
   ): Promise<ServiceProviderResponse> {
+    // Validate required parameters
+    if (!token) {
+      throw new Error('Token is required');
+    }
+
+    if (!context.isSubDomain) {
+      return welcomeNodeConfig;
+    }
+
+    if (!context?.organization) {
+      throw new Error('Context with organization is required');
+    }
+
     const entity = !entities || !entities.length ? 'main' : entities[0];
 
     let response;
     try {
-      response = await this.getKubernetesResources(entity, context);
+      response = await this.getKubernetesResources(entity, context, token);
     } catch (error) {
       console.error(error);
 
       if (error.code == 429 || error.statusCode == 429) {
         await new Promise((resolve) => setTimeout(resolve, 1000));
         console.log('Retry after 1 second reading kubernetes resources.');
-        response = await this.getKubernetesResources(entity, context);
+        response = await this.getKubernetesResources(entity, context, token);
       }
     }
 
@@ -62,7 +70,7 @@ export class KubernetesServiceProvidersService
     return {
       rawServiceProviders: [
         {
-          name: 'openmfp-system',
+          name: 'platform-mesh-system',
           displayName: '',
           creationTimestamp: '',
           contentConfiguration: contentConfigurations,
@@ -74,27 +82,29 @@ export class KubernetesServiceProvidersService
   private async getKubernetesResources(
     entity: string,
     requestContext: Record<string, any>,
+    token: string,
   ) {
     const gvr = {
-      group: 'core.openmfp.io',
+      group: 'ui.platform-mesh.io',
       version: 'v1alpha1',
       plural: 'contentconfigurations',
       labelSelector: `ui.platform-mesh.io/entity=${entity}`,
     };
-    return await this.k8sApi.listClusterCustomObject(gvr, {
+
+    const k8sApi = this.kcpKubernetesService.getKcpK8sApiClient();
+    return await k8sApi.listClusterCustomObject(gvr, {
       middleware: [
         new PromiseMiddlewareWrapper({
           pre: async (context) => {
-            const url = new URL(context.getUrl());
+            const kcpUrl = this.kcpKubernetesService.getKcpVirtualWorkspaceUrl(
+              requestContext.organization,
+              requestContext?.['core_platform-mesh_io_account'],
+            );
+            const path = `${kcpUrl}/apis/${gvr.group}/${gvr.version}/${gvr.plural}`;
+            console.log('kcp url: ', path);
 
-            let path = `${this.baseUrl.pathname}/clusters/root:orgs:${requestContext.organization}`;
-            if (requestContext?.account) {
-              path += `:${requestContext.account}`; // FIXME: how are nested accounts and paths handled in the portal?
-            }
-            path += `/apis/${gvr.group}/${gvr.version}/${gvr.plural}`;
-
-            url.pathname = path;
-            context.setUrl(url.toString());
+            context.setUrl(path);
+            context.setHeaderParam('Authorization', `Bearer ${token}`);
             return context;
           },
           post: async (context) => context,

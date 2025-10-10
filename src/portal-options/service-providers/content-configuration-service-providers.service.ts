@@ -1,4 +1,4 @@
-import { RequestContext } from '../openmfp-request-context-provider.js';
+import { RequestContext } from '../pm-request-context-provider.js';
 import { contentConfigurationsQuery } from './contentconfigurations-query.js';
 import { ContentConfigurationQueryResponse } from './models/contentconfigurations.js';
 import { welcomeNodeConfig } from './models/welcome-node-config.js';
@@ -40,12 +40,13 @@ export class ContentConfigurationServiceProvidersService
       'kubernetes-graphql-gateway/root',
       'kubernetes-graphql-gateway/virtual-workspace/contentconfigurations/root',
     );
-    if (context?.account) {
-      url = url.replace('/graphql', `:${context.account}/graphql`);
+
+    const platformMeshAccountId = context?.['core_platform-mesh_io_account'];
+    if (platformMeshAccountId) {
+      url = url.replace('/graphql', `:${platformMeshAccountId}/graphql`);
     }
 
     console.log(`Calculated crd gateway api url: ${url}`);
-
     const client = new GraphQLClient(url, {
       headers: {
         Authorization: `Bearer ${token}`,
@@ -110,7 +111,7 @@ export class ContentConfigurationServiceProvidersService
       return {
         rawServiceProviders: [
           {
-            name: 'openmfp-system',
+            name: 'platform-mesh-system',
             displayName: '',
             creationTimestamp: '',
             contentConfiguration: contentConfigurations,

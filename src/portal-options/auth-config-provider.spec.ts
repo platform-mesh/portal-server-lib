@@ -1,4 +1,5 @@
 import { PMAuthConfigProvider } from './auth-config-provider.js';
+import { getDomainAndOrganization } from './utils/domain.js';
 import { HttpException } from '@nestjs/common';
 import {
   DiscoveryService,
@@ -7,6 +8,23 @@ import {
 } from '@openmfp/portal-server-lib';
 import type { Request } from 'express';
 import { mock } from 'jest-mock-extended';
+
+jest.mock('@kubernetes/client-node', () => {
+  class KubeConfig {
+    loadFromDefault = jest.fn();
+    loadFromFile = jest.fn();
+    getCurrentCluster = jest.fn().mockReturnValue({
+      server: 'https://k8s.example.com/base',
+      name: 'test-cluster',
+    });
+    makeApiClient = jest.fn();
+    addUser = jest.fn();
+    addContext = jest.fn();
+    setCurrentContext = jest.fn();
+  }
+  class CustomObjectsApi {}
+  return { KubeConfig, CustomObjectsApi };
+});
 
 describe('PMAuthConfigProvider', () => {
   let provider: PMAuthConfigProvider;
@@ -19,11 +37,7 @@ describe('PMAuthConfigProvider', () => {
     envAuthConfigService = mock<EnvAuthConfigService>();
     mockEnvService = mock<EnvService>();
     mockEnvService.getEnv.mockReturnValue({ isLocal: false });
-    provider = new PMAuthConfigProvider(
-      discoveryService,
-      envAuthConfigService,
-      mockEnvService,
-    );
+    provider = new PMAuthConfigProvider(discoveryService);
     jest.resetModules();
     process.env = {
       AUTH_SERVER_URL_DEFAULT: 'authUrl',
@@ -32,6 +46,7 @@ describe('PMAuthConfigProvider', () => {
       OIDC_CLIENT_ID_DEFAULT: 'client123',
       OIDC_CLIENT_SECRET_DEFAULT: 'secret123',
     };
+    provider['getClientSecret'] = jest.fn().mockResolvedValue('secret');
   });
 
   it('should delegate to EnvAuthConfigService if available', async () => {
@@ -42,19 +57,20 @@ describe('PMAuthConfigProvider', () => {
       oauthServerUrl: 'url',
       oauthTokenUrl: 'token',
       clientId: 'cid',
-      clientSecret: 'sec',
+      clientSecret: 'secret',
+      oidcIssuerUrl: 'issuer',
     };
     envAuthConfigService.getAuthConfig.mockResolvedValue(expected);
 
     const result = await provider.getAuthConfig(req);
 
     expect(result).toEqual({
-      idpName: 'foo',
       baseDomain: 'example.com',
-      oauthServerUrl: 'url',
-      oauthTokenUrl: 'token',
-      clientId: 'cid',
-      clientSecret: 'sec',
+      clientId: 'foo',
+      clientSecret: 'secret',
+      idpName: 'foo',
+      oauthServerUrl: 'authUrl',
+      oauthTokenUrl: 'tokenUrl',
     });
   });
 
@@ -64,6 +80,7 @@ describe('PMAuthConfigProvider', () => {
     discoveryService.getOIDC.mockResolvedValue({
       authorization_endpoint: 'authUrl',
       token_endpoint: 'tokenUrl',
+      issuer: 'issuer',
     });
 
     const result = await provider.getAuthConfig(req);
@@ -72,8 +89,8 @@ describe('PMAuthConfigProvider', () => {
       baseDomain: 'example.com',
       oauthServerUrl: 'authUrl',
       oauthTokenUrl: 'tokenUrl',
-      clientId: 'client123',
-      clientSecret: 'secret123',
+      clientId: 'foo',
+      clientSecret: 'secret',
     });
   });
 
@@ -88,7 +105,7 @@ describe('PMAuthConfigProvider', () => {
 
   it('getDomain should return organization and baseDomain', () => {
     const req = { hostname: 'foo.example.com' } as Request;
-    const result = provider.getDomain(req);
+    const result = getDomainAndOrganization(req);
     expect(result).toEqual({
       organization: 'foo',
       baseDomain: 'example.com',
@@ -97,7 +114,7 @@ describe('PMAuthConfigProvider', () => {
 
   it('getDomain should return clientId if hostname equals baseDomain', () => {
     const req = { hostname: 'example.com' } as Request;
-    const result = provider.getDomain(req);
+    const result = getDomainAndOrganization(req);
     expect(result).toEqual({
       organization: 'client123',
       baseDomain: 'example.com',
