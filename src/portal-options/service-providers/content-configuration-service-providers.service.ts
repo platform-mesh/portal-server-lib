@@ -24,7 +24,7 @@ export class ContentConfigurationServiceProvidersService
       throw new Error('Token is required');
     }
 
-    if (!context.isSubDomain) {
+    if (!context.isSubDomain && !context.isLocalhost) {
       return welcomeNodeConfig;
     }
 
