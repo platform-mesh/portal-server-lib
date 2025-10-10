@@ -1,4 +1,4 @@
-import { RequestContext } from '../openmfp-request-context-provider.js';
+import { RequestContext } from '../pm-request-context-provider.js';
 import { ContentConfigurationServiceProvidersService } from './content-configuration-service-providers.service.js';
 import { welcomeNodeConfig } from './models/welcome-node-config.js';
 import { GraphQLClient } from 'graphql-request';

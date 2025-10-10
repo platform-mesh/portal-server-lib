@@ -1,4 +1,5 @@
 import { PMAuthConfigProvider } from './auth-config-provider.js';
+import { getDomainAndOrganization } from './utils/domain.js';
 import { HttpException } from '@nestjs/common';
 import {
   DiscoveryService,
@@ -53,6 +54,7 @@ describe('PMAuthConfigProvider', () => {
       oauthTokenUrl: 'token',
       clientId: 'cid',
       clientSecret: 'secret',
+      oidcIssuerUrl: 'issuer',
     };
     envAuthConfigService.getAuthConfig.mockResolvedValue(expected);
 
@@ -74,6 +76,7 @@ describe('PMAuthConfigProvider', () => {
     discoveryService.getOIDC.mockResolvedValue({
       authorization_endpoint: 'authUrl',
       token_endpoint: 'tokenUrl',
+      issuer: 'issuer',
     });
 
     const result = await provider.getAuthConfig(req);
@@ -98,7 +101,7 @@ describe('PMAuthConfigProvider', () => {
 
   it('getDomain should return organization and baseDomain', () => {
     const req = { hostname: 'foo.example.com' } as Request;
-    const result = provider.getDomain(req);
+    const result = getDomainAndOrganization(req);
     expect(result).toEqual({
       organization: 'foo',
       baseDomain: 'example.com',
@@ -107,7 +110,7 @@ describe('PMAuthConfigProvider', () => {
 
   it('getDomain should return clientId if hostname equals baseDomain', () => {
     const req = { hostname: 'example.com' } as Request;
-    const result = provider.getDomain(req);
+    const result = getDomainAndOrganization(req);
     expect(result).toEqual({
       organization: 'client123',
       baseDomain: 'example.com',

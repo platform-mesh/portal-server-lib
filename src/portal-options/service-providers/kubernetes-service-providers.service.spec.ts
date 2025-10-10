@@ -1,5 +1,7 @@
+import { KcpKubernetesService } from '../services/kcp-k8s.service.js';
 import { KubernetesServiceProvidersService } from './kubernetes-service-providers.service.js';
 import { welcomeNodeConfig } from './models/welcome-node-config.js';
+import { mock } from 'jest-mock-extended';
 
 const listClusterCustomObject = jest.fn();
 
@@ -34,12 +36,21 @@ jest.mock('@kubernetes/client-node/dist/gen/middleware.js', () => ({
 }));
 
 describe('KubernetesServiceProvidersService', () => {
+  let kcpKubernetesServiceMock: jest.Mocked<KcpKubernetesService>;
+
   beforeEach(() => {
     jest.resetAllMocks();
+    kcpKubernetesServiceMock = mock();
+    kcpKubernetesServiceMock.getKcpWorkspaceUrl.mockReturnValue(
+      new URL('https://k8s.example.com/clusters/root:orgs:test-org'),
+    );
+    kcpKubernetesServiceMock.getKcpK8sApiClient.mockReturnValue({
+      listClusterCustomObject,
+    } as any);
   });
 
   it('throws if token is missing', async () => {
-    const svc = new KubernetesServiceProvidersService();
+    const svc = new KubernetesServiceProvidersService(kcpKubernetesServiceMock);
     await expect(
       svc.getServiceProviders('', ['entity'], {
         token: undefined,
@@ -48,7 +59,7 @@ describe('KubernetesServiceProvidersService', () => {
   });
 
   it('throws if context organization is missing', async () => {
-    const svc = new KubernetesServiceProvidersService();
+    const svc = new KubernetesServiceProvidersService(kcpKubernetesServiceMock);
     await expect(
       svc.getServiceProviders('token', ['entity'], {
         token: 'token',
@@ -59,7 +70,7 @@ describe('KubernetesServiceProvidersService', () => {
   });
 
   it('returns welcome node config when on the base domain', async () => {
-    const svc = new KubernetesServiceProvidersService();
+    const svc = new KubernetesServiceProvidersService(kcpKubernetesServiceMock);
     const result = await svc.getServiceProviders('token', ['entity'], {
       organization: undefined,
       isSubDomain: false,
@@ -75,7 +86,7 @@ describe('KubernetesServiceProvidersService', () => {
       },
     );
 
-    const svc = new KubernetesServiceProvidersService();
+    const svc = new KubernetesServiceProvidersService(kcpKubernetesServiceMock);
     const res = await svc.getServiceProviders('token', [], {
       organization: 'org',
       isSubDomain: true,
@@ -110,8 +121,13 @@ describe('KubernetesServiceProvidersService', () => {
         ],
       };
     });
+    kcpKubernetesServiceMock.getKcpVirtualWorkspaceUrl.mockReturnValue(
+      new URL(
+        'https://k8s.example.com/services/contentconfigurations/clusters/root:orgs:acme:a1',
+      ),
+    );
 
-    const svc = new KubernetesServiceProvidersService();
+    const svc = new KubernetesServiceProvidersService(kcpKubernetesServiceMock);
     const res = await svc.getServiceProviders('token', ['main'], {
       organization: 'acme',
       isSubDomain: true,
@@ -123,8 +139,8 @@ describe('KubernetesServiceProvidersService', () => {
       'http://fallback.example/app',
     );
 
-    expect(capturedUrl).toContain(
-      '/clusters/root:orgs:acme:a1/apis/ui.platform-mesh.io/v1alpha1/contentconfigurations',
+    expect(capturedUrl).toEqual(
+      'https://k8s.example.com/services/contentconfigurations/clusters/root:orgs:acme:a1/apis/ui.platform-mesh.io/v1alpha1/contentconfigurations',
     );
     expect(ctx.setHeaderParam).toHaveBeenCalledWith(
       'Authorization',
@@ -153,7 +169,7 @@ describe('KubernetesServiceProvidersService', () => {
       .spyOn(console, 'error')
       .mockImplementation(() => undefined as unknown as never);
 
-    const svc = new KubernetesServiceProvidersService();
+    const svc = new KubernetesServiceProvidersService(kcpKubernetesServiceMock);
     const promise = svc.getServiceProviders('token', [], {
       organization: 'org',
       isSubDomain: true,

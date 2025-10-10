@@ -1,4 +1,4 @@
-import { RequestContext } from '../openmfp-request-context-provider.js';
+import { RequestContext } from '../pm-request-context-provider.js';
 import { contentConfigurationsQuery } from './contentconfigurations-query.js';
 import { ContentConfigurationQueryResponse } from './models/contentconfigurations.js';
 import { welcomeNodeConfig } from './models/welcome-node-config.js';

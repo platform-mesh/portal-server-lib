@@ -1,6 +1,6 @@
-import { PMAuthConfigProvider } from './auth-config-provider.js';
-import { OpenmfpPortalContextService } from './openmfp-portal-context.service.js';
-import { RequestContextProviderImpl } from './openmfp-request-context-provider.js';
+import { PMPortalContextService } from './pm-portal-context.service.js';
+import { PMRequestContextProvider } from './pm-request-context-provider.js';
+import { getDomainAndOrganization } from './utils/domain.js';
 import type { Request } from 'express';
 import { mock } from 'jest-mock-extended';
 
@@ -21,28 +21,29 @@ jest.mock('@kubernetes/client-node', () => {
   return { KubeConfig, CustomObjectsApi };
 });
 
-describe('RequestContextProviderImpl', () => {
-  let provider: RequestContextProviderImpl;
-  const pmAuthConfigProviderMock = mock<PMAuthConfigProvider>();
-  const portalContext = mock<OpenmfpPortalContextService>();
+jest.mock('./utils/domain.js', () => ({
+  getDomainAndOrganization: jest.fn(),
+}));
+
+describe('PMRequestContextProvider', () => {
+  let provider: PMRequestContextProvider;
+  const portalContextService = mock<PMPortalContextService>();
+  const mockedGetDomainAndOrganization = jest.mocked(getDomainAndOrganization);
 
   beforeEach(() => {
     jest.resetAllMocks();
-    (
-      pmAuthConfigProviderMock.getDomain as unknown as jest.Mock
-    ).mockReturnValue({
+    mockedGetDomainAndOrganization.mockReturnValue({
       organization: 'org1',
       baseDomain: 'org1.example.com',
     });
-    (portalContext.getContextValues as unknown as jest.Mock).mockResolvedValue({
+    (
+      portalContextService.getContextValues as unknown as jest.Mock
+    ).mockResolvedValue({
       crdGatewayApiUrl: 'http://gateway/graphql',
       other: 'x',
     });
 
-    provider = new RequestContextProviderImpl(
-      pmAuthConfigProviderMock,
-      portalContext,
-    );
+    provider = new PMRequestContextProvider(portalContextService);
   });
 
   it('should merge request query, portal context and organization from envService', async () => {
@@ -61,7 +62,7 @@ describe('RequestContextProviderImpl', () => {
       organization: 'org1',
     });
 
-    expect(pmAuthConfigProviderMock.getDomain).toHaveBeenCalledWith(req);
-    expect(portalContext.getContextValues).toHaveBeenCalledWith(req);
+    expect(mockedGetDomainAndOrganization).toHaveBeenCalledWith(req);
+    expect(portalContextService.getContextValues).toHaveBeenCalledWith(req);
   });
 });

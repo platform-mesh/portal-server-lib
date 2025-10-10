@@ -55,20 +55,11 @@ export class PMAuthConfigProvider implements AuthConfigService {
     return {
       idpName: clientId,
       baseDomain,
-      oauthServerUrl,
       clientId,
       clientSecret,
+      oauthServerUrl,
       oauthTokenUrl,
-    };
-  }
-
-  getDomain(request: Request): { organization?: string; baseDomain?: string } {
-    const subDomain = request.hostname.split('.')[0];
-    const clientId = process.env['OIDC_CLIENT_ID_DEFAULT'];
-    const baseDomain = process.env['BASE_DOMAINS_DEFAULT'];
-    return {
-      organization: request.hostname === baseDomain ? clientId : subDomain,
-      baseDomain,
+      oidcIssuerUrl: oidc?.issuer,
     };
   }
 
@@ -83,11 +74,10 @@ export class PMAuthConfigProvider implements AuthConfigService {
       });
       const secretData = res.data;
 
-      const clientSecret = Buffer.from(
+      return Buffer.from(
         secretData['attribute.client_secret'],
         'base64',
       ).toString('utf-8');
-      return clientSecret;
     } catch (err) {
       console.error(
         `Failed to fetch secret ${secretName}:`,
