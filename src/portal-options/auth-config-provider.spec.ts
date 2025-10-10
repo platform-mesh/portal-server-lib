@@ -3,7 +3,6 @@ import { HttpException } from '@nestjs/common';
 import {
   DiscoveryService,
   EnvAuthConfigService,
-  EnvService,
 } from '@openmfp/portal-server-lib';
 import type { Request } from 'express';
 import { mock } from 'jest-mock-extended';
@@ -29,13 +28,10 @@ describe('PMAuthConfigProvider', () => {
   let provider: PMAuthConfigProvider;
   let discoveryService: jest.Mocked<DiscoveryService>;
   let envAuthConfigService: jest.Mocked<EnvAuthConfigService>;
-  let mockEnvService: jest.Mocked<EnvService>;
 
   beforeEach(() => {
     discoveryService = mock<DiscoveryService>();
     envAuthConfigService = mock<EnvAuthConfigService>();
-    mockEnvService = mock<EnvService>();
-    mockEnvService.getEnv.mockReturnValue({ isLocal: false });
     provider = new PMAuthConfigProvider(discoveryService);
     jest.resetModules();
     process.env = {
