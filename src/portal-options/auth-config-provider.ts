@@ -1,3 +1,4 @@
+import { getOrganization } from './utils/domain.js';
 import { CoreV1Api, KubeConfig } from '@kubernetes/client-node';
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import {
@@ -19,13 +20,7 @@ export class PMAuthConfigProvider implements AuthConfigService {
 
   async getAuthConfig(request: Request): Promise<ServerAuthVariables> {
     const baseDomain = process.env['BASE_DOMAINS_DEFAULT'];
-
-    const subDomain = request.hostname.split('.')[0];
-    const isSubdomain = request.hostname !== baseDomain;
-
-    const clientId = isSubdomain
-      ? subDomain
-      : process.env['OIDC_CLIENT_ID_DEFAULT'];
+    const clientId = getOrganization(request);
     const clientSecret = await this.getClientSecret(clientId);
 
     const oidcUrl = process.env[`DISCOVERY_ENDPOINT`]?.replace(

@@ -1,5 +1,5 @@
 import { KcpKubernetesService } from './services/kcp-k8s.service.js';
-import { getDomainAndOrganization } from './utils/domain.js';
+import { getOrganization } from './utils/domain.js';
 import { Injectable } from '@nestjs/common';
 import { PortalContextProvider } from '@openmfp/portal-server-lib';
 import type { Request } from 'express';
@@ -31,7 +31,7 @@ export class PMPortalContextService implements PortalContextProvider {
   }
 
   private addKcpWorkspaceUrl(request, portalContext) {
-    const { organization } = getDomainAndOrganization(request);
+    const organization = getOrganization(request);
     const account = request.query?.['core_platform-mesh_io_account'];
 
     portalContext.kcpWorkspaceUrl = this.kcpKubernetesService
@@ -43,12 +43,12 @@ export class PMPortalContextService implements PortalContextProvider {
     request: Request,
     portalContext: Record<string, any>,
   ): void {
-    const org = getDomainAndOrganization(request);
-    const subDomain =
-      request.hostname === org.baseDomain ? '' : `${org.organization}.`;
+    const org = getOrganization(request);
+    const baseDomain = process.env['BASE_DOMAINS_DEFAULT'];
+    const subDomain = request.hostname !== baseDomain ? `${org}.` : '';
     portalContext.crdGatewayApiUrl = portalContext.crdGatewayApiUrl
       ?.replace('${org-subdomain}', subDomain)
-      .replace('${org-name}', org.organization);
+      .replace('${org-name}', org);
   }
 
   private toCamelCase(text: string): string {

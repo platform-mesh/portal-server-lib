@@ -5,7 +5,6 @@ import { welcomeNodeConfig } from './models/welcome-node-config.js';
 import { Injectable } from '@nestjs/common';
 import {
   ContentConfiguration,
-  EnvService,
   ServiceProviderResponse,
   ServiceProviderService,
 } from '@openmfp/portal-server-lib';
@@ -15,8 +14,6 @@ import { GraphQLClient } from 'graphql-request';
 export class ContentConfigurationServiceProvidersService
   implements ServiceProviderService
 {
-  constructor(private envService: EnvService) {}
-
   async getServiceProviders(
     token: string,
     entities: string[],
@@ -27,8 +24,7 @@ export class ContentConfigurationServiceProvidersService
       throw new Error('Token is required');
     }
 
-    const { isLocal } = this.envService.getEnv();
-    if (!context.isSubDomain && !isLocal) {
+    if (!context.isSubDomain) {
       return welcomeNodeConfig;
     }
 

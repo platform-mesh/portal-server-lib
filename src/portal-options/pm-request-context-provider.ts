@@ -1,5 +1,5 @@
 import { PMPortalContextService } from './pm-portal-context.service.js';
-import { getDomainAndOrganization } from './utils/domain.js';
+import { getOrganization } from './utils/domain.js';
 import { Injectable } from '@nestjs/common';
 import { RequestContextProvider } from '@openmfp/portal-server-lib';
 import type { Request } from 'express';
@@ -16,12 +16,15 @@ export class PMRequestContextProvider implements RequestContextProvider {
   constructor(private pmPortalContextService: PMPortalContextService) {}
 
   async getContextValues(request: Request): Promise<RequestContext> {
-    const domainData = getDomainAndOrganization(request);
+    const organization = getOrganization(request);
+    const baseDomain = process.env['BASE_DOMAINS_DEFAULT'];
     return {
       ...request.query,
       ...(await this.pmPortalContextService.getContextValues(request)),
-      organization: domainData.organization,
-      isSubDomain: request.hostname !== domainData.baseDomain,
+      organization,
+      isSubDomain:
+        request.hostname.includes('localhost') ||
+        request.hostname !== baseDomain,
     };
   }
 }

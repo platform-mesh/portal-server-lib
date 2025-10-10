@@ -1,5 +1,4 @@
 import { PMAuthConfigProvider } from './auth-config-provider.js';
-import { getDomainAndOrganization } from './utils/domain.js';
 import { HttpException } from '@nestjs/common';
 import {
   DiscoveryService,
@@ -101,35 +100,5 @@ describe('PMAuthConfigProvider', () => {
     process.env = {};
 
     await expect(provider.getAuthConfig(req)).rejects.toThrow(HttpException);
-  });
-
-  it('getDomain should return organization and baseDomain', () => {
-    const req = { hostname: 'foo.example.com' } as Request;
-    const result = getDomainAndOrganization(req);
-    expect(result).toEqual({
-      organization: 'foo',
-      baseDomain: 'example.com',
-    });
-  });
-
-  it('getDomain should return clientId if hostname equals baseDomain', () => {
-    const req = { hostname: 'example.com' } as Request;
-    const result = getDomainAndOrganization(req);
-    expect(result).toEqual({
-      organization: 'client123',
-      baseDomain: 'example.com',
-    });
-  });
-
-  it('getDomain should return defaults for local developmentn', () => {
-    const req = { hostname: 'localhost' } as Request;
-    mockEnvService.getEnv.mockReturnValue({ isLocal: true });
-
-    const result = provider.getDomain(req);
-
-    expect(result).toEqual({
-      organization: 'openmfp',
-      baseDomain: 'localhost',
-    });
   });
 });
