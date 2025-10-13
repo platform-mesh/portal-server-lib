@@ -24,7 +24,7 @@ export class KubernetesServiceProvidersService
       throw new Error('Token is required');
     }
 
-    if (!context.isSubDomain && !context.isLocalhost) {
+    if (!context.isSubDomain) {
       return welcomeNodeConfig;
     }
 

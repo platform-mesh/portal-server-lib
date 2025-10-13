@@ -9,7 +9,6 @@ export interface RequestContext extends Record<string, any> {
   organization: string;
   crdGatewayApiUrl?: string;
   isSubDomain: boolean;
-  isLocalhost: boolean;
 }
 
 @Injectable()
@@ -24,7 +23,6 @@ export class PMRequestContextProvider implements RequestContextProvider {
       ...(await this.pmPortalContextService.getContextValues(request)),
       organization,
       isSubDomain: request.hostname !== baseDomain,
-      isLocalhost: request.hostname.includes('localhost'),
     };
   }
 }
