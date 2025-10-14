@@ -1,7 +1,7 @@
-import { getDomainAndOrganization } from './domain.js';
+import { getOrganization } from './domain.js';
 import type { Request } from 'express';
 
-describe('getDomainAndOrganization', () => {
+describe('getOrganization', () => {
   const OLD_ENV = process.env;
 
   beforeEach(() => {
@@ -18,56 +18,30 @@ describe('getDomainAndOrganization', () => {
   const makeReq = (hostname: string): Request =>
     ({ hostname }) as unknown as Request;
 
-  it('returns subdomain as organization when hostname is not base domain', () => {
-    const req = makeReq('test-org.example.com');
-    const result = getDomainAndOrganization(req);
-    expect(result).toEqual({
-      organization: 'test-org',
-      baseDomain: 'example.com',
-    });
+  it('returns subdomain when hostname is not base domain', () => {
+    const req = makeReq('team1.example.com');
+    expect(getOrganization(req)).toBe('team1');
   });
 
-  it('returns client id as organization when hostname equals base domain', () => {
+  it('returns client id when hostname equals base domain', () => {
     const req = makeReq('example.com');
-    const result = getDomainAndOrganization(req);
-    expect(result).toEqual({
-      organization: 'default-client',
-      baseDomain: 'example.com',
-    });
+    expect(getOrganization(req)).toBe('default-client');
   });
 
-  it('handles single-label hostnames', () => {
+  it('handles single-label hostname', () => {
     const req = makeReq('localhost');
-    const result = getDomainAndOrganization(req);
-    expect(result).toEqual({
-      organization: 'localhost',
-      baseDomain: 'example.com',
-    });
+    expect(getOrganization(req)).toBe('localhost');
   });
 
-  it('handles multi-level subdomains', () => {
+  it('handles multi-level subdomain', () => {
     const req = makeReq('alpha.beta.example.com');
-    const result = getDomainAndOrganization(req);
-    expect(result).toEqual({
-      organization: 'alpha',
-      baseDomain: 'example.com',
-    });
+    expect(getOrganization(req)).toBe('alpha');
   });
 
-  it('propagates updated env values', () => {
+  it('reflects updated env values', () => {
     process.env.OIDC_CLIENT_ID_DEFAULT = 'another-client';
     process.env.BASE_DOMAINS_DEFAULT = 'corp.example.org';
-    const req1 = makeReq('corp.example.org');
-    const req2 = makeReq('dev.corp.example.org');
-
-    expect(getDomainAndOrganization(req1)).toEqual({
-      organization: 'another-client',
-      baseDomain: 'corp.example.org',
-    });
-
-    expect(getDomainAndOrganization(req2)).toEqual({
-      organization: 'dev',
-      baseDomain: 'corp.example.org',
-    });
+    expect(getOrganization(makeReq('corp.example.org'))).toBe('another-client');
+    expect(getOrganization(makeReq('dev.corp.example.org'))).toBe('dev');
   });
 });

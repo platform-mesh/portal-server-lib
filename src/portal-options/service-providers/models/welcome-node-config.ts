@@ -18,6 +18,7 @@ export const welcomeNodeConfig: ServiceProviderResponse = {
                   pathSegment: 'welcome',
                   hideFromNav: true,
                   hideSideNav: true,
+                  showBreadcrumbs: false,
                   order: 1,
                   url: '/assets/platform-mesh-portal-ui-wc.js#welcome-view',
                   webcomponent: {

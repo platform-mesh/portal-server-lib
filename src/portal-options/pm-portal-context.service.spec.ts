@@ -1,9 +1,10 @@
 import { PMPortalContextService } from './pm-portal-context.service.js';
 import { KcpKubernetesService } from './services/kcp-k8s.service.js';
-import { getDomainAndOrganization } from './utils/domain.js';
+import { getOrganization } from './utils/domain.js';
 import { Test, TestingModule } from '@nestjs/testing';
 import { Request } from 'express';
 import { mock } from 'jest-mock-extended';
+import process from 'node:process';
 
 jest.mock('@kubernetes/client-node', () => {
   class KubeConfig {
@@ -23,22 +24,19 @@ jest.mock('@kubernetes/client-node', () => {
 });
 
 jest.mock('./utils/domain.js', () => ({
-  getDomainAndOrganization: jest.fn(),
+  getOrganization: jest.fn(),
 }));
 
 describe('PMPortalContextService', () => {
   let service: PMPortalContextService;
   let kcpKubernetesServiceMock: jest.Mocked<KcpKubernetesService>;
-  const mockedGetDomainAndOrganization = jest.mocked(getDomainAndOrganization);
+  const mockedGetDomainAndOrganization = jest.mocked(getOrganization);
   let mockRequest: any;
 
   beforeEach(async () => {
     kcpKubernetesServiceMock = mock();
 
-    mockedGetDomainAndOrganization.mockReturnValue({
-      baseDomain: 'example.com',
-      organization: 'test-org',
-    });
+    mockedGetDomainAndOrganization.mockReturnValue('test-org');
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -87,10 +85,7 @@ describe('PMPortalContextService', () => {
     process.env.OTHER_ENV_VAR = 'should-be-ignored';
 
     try {
-      mockedGetDomainAndOrganization.mockReturnValue({
-        baseDomain: 'example.com',
-        organization: 'test-org',
-      });
+      mockedGetDomainAndOrganization.mockReturnValue('test-org');
 
       const result = await service.getContextValues(mockRequest as Request);
 
@@ -110,10 +105,7 @@ describe('PMPortalContextService', () => {
     process.env.OPENMFP_PORTAL_CONTEXT_MULTIPLE_SNAKE_CASE_KEYS = 'value2';
 
     try {
-      mockedGetDomainAndOrganization.mockReturnValue({
-        baseDomain: 'example.com',
-        organization: 'test-org',
-      });
+      mockedGetDomainAndOrganization.mockReturnValue('test-org');
 
       const result = await service.getContextValues(mockRequest as Request);
 
@@ -132,10 +124,7 @@ describe('PMPortalContextService', () => {
       'https://${org-subdomain}api.example.com/${org-name}/graphql';
 
     try {
-      mockedGetDomainAndOrganization.mockReturnValue({
-        baseDomain: 'example.com',
-        organization: 'test-org',
-      });
+      mockedGetDomainAndOrganization.mockReturnValue('test-org');
 
       mockRequest.hostname = 'subdomain.example.com';
 
@@ -154,11 +143,8 @@ describe('PMPortalContextService', () => {
       'https://${org-subdomain}api.example.com/${org-name}/graphql';
 
     try {
-      mockedGetDomainAndOrganization.mockReturnValue({
-        baseDomain: 'example.com',
-        organization: 'test-org',
-      });
-
+      mockedGetDomainAndOrganization.mockReturnValue('test-org');
+      process.env['BASE_DOMAINS_DEFAULT'] = 'example.com';
       mockRequest.hostname = 'example.com';
 
       const result = await service.getContextValues(mockRequest as Request);
@@ -177,10 +163,7 @@ describe('PMPortalContextService', () => {
     process.env.OPENMFP_PORTAL_CONTEXT_VALID_KEY = 'valid-value';
 
     try {
-      mockedGetDomainAndOrganization.mockReturnValue({
-        baseDomain: 'example.com',
-        organization: 'test-org',
-      });
+      mockedGetDomainAndOrganization.mockReturnValue('test-org');
 
       const result = await service.getContextValues(mockRequest as Request);
 

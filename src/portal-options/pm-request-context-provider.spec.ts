@@ -1,6 +1,6 @@
 import { PMPortalContextService } from './pm-portal-context.service.js';
 import { PMRequestContextProvider } from './pm-request-context-provider.js';
-import { getDomainAndOrganization } from './utils/domain.js';
+import { getOrganization } from './utils/domain.js';
 import type { Request } from 'express';
 import { mock } from 'jest-mock-extended';
 
@@ -22,20 +22,17 @@ jest.mock('@kubernetes/client-node', () => {
 });
 
 jest.mock('./utils/domain.js', () => ({
-  getDomainAndOrganization: jest.fn(),
+  getOrganization: jest.fn(),
 }));
 
 describe('PMRequestContextProvider', () => {
   let provider: PMRequestContextProvider;
   const portalContextService = mock<PMPortalContextService>();
-  const mockedGetDomainAndOrganization = jest.mocked(getDomainAndOrganization);
+  const mockedGetOrganization = jest.mocked(getOrganization);
 
   beforeEach(() => {
     jest.resetAllMocks();
-    mockedGetDomainAndOrganization.mockReturnValue({
-      organization: 'org1',
-      baseDomain: 'org1.example.com',
-    });
+    mockedGetOrganization.mockReturnValue('org1');
     (
       portalContextService.getContextValues as unknown as jest.Mock
     ).mockResolvedValue({
@@ -62,7 +59,7 @@ describe('PMRequestContextProvider', () => {
       organization: 'org1',
     });
 
-    expect(mockedGetDomainAndOrganization).toHaveBeenCalledWith(req);
+    expect(mockedGetOrganization).toHaveBeenCalledWith(req);
     expect(portalContextService.getContextValues).toHaveBeenCalledWith(req);
   });
 });

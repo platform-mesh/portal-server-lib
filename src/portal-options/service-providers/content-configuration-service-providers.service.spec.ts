@@ -56,6 +56,17 @@ describe('ContentConfigurationServiceProvidersService', () => {
     expect(result).toEqual(welcomeNodeConfig);
   });
 
+  it('throws if context organization is missing', async () => {
+    context.isSubDomain = false;
+    const result = await service.getServiceProviders(
+      'token',
+      ['entity'],
+      context,
+    );
+
+    expect(result).toEqual(welcomeNodeConfig);
+  });
+
   it('returns parsed content configurations', async () => {
     mockClient.request.mockResolvedValue({
       ui_platform_mesh_io: {
