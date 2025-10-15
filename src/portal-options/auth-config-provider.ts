@@ -1,4 +1,4 @@
-import { getOrganization } from './utils/domain.js';
+import {getDiscoveryEndpoint, getOrganization} from './utils/domain.js';
 import { CoreV1Api, KubeConfig } from '@kubernetes/client-node';
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import {
@@ -19,14 +19,11 @@ export class PMAuthConfigProvider implements AuthConfigService {
   }
 
   async getAuthConfig(request: Request): Promise<ServerAuthVariables> {
-    const baseDomain = process.env['BASE_DOMAINS_DEFAULT'];
+    const oidcUrl = getDiscoveryEndpoint(request);
     const clientId = getOrganization(request);
-    const clientSecret = await this.getClientSecret(clientId);
 
-    const oidcUrl = process.env[`DISCOVERY_ENDPOINT`]?.replace(
-      '${org-name}',
-      clientId,
-    );
+    const baseDomain = process.env['BASE_DOMAINS_DEFAULT'];
+    const clientSecret = await this.getClientSecret(clientId);
     const oidc = await this.discoveryService.getOIDC(oidcUrl);
     const oauthServerUrl =
       oidc?.authorization_endpoint ?? process.env['AUTH_SERVER_URL_DEFAULT'];
@@ -55,6 +52,7 @@ export class PMAuthConfigProvider implements AuthConfigService {
       oauthServerUrl,
       oauthTokenUrl,
       oidcIssuerUrl: oidc?.issuer,
+      endSessionUrl: oidc?.end_session_endpoint
     };
   }
 
