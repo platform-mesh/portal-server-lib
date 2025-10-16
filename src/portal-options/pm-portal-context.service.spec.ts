@@ -62,14 +62,14 @@ describe('PMPortalContextService', () => {
   });
 
   it('should return context with kcp workspace url', async () => {
-    kcpKubernetesServiceMock.getKcpWorkspaceUrl.mockReturnValue(
-      new URL('https://k8s.example.com/clusters/root:orgs:test-org'),
+    kcpKubernetesServiceMock.getKcpWorkspacePublicUrl.mockReturnValue(
+      'https://kcp.api.example.com/',
     );
 
     const result = await service.getContextValues(mockRequest as Request);
 
     expect(result).toEqual({
-      kcpWorkspaceUrl: 'https://k8s.example.com/clusters/root:orgs:test-org',
+      kcpWorkspaceUrl: 'https://kcp.api.example.com/',
     });
   });
 

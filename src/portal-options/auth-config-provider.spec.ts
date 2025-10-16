@@ -76,6 +76,7 @@ describe('PMAuthConfigProvider', () => {
       authorization_endpoint: 'authUrl',
       token_endpoint: 'tokenUrl',
       issuer: 'issuer',
+      end_session_endpoint: 'endSessionUrl',
     });
 
     const result = await provider.getAuthConfig(req);

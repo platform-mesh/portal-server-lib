@@ -59,4 +59,20 @@ describe('KcpKubernetesService', () => {
       'https://kcp.example.com/services/contentconfigurations/clusters/root:orgs:orgX',
     );
   });
+
+  it('builds public workspace url with org and account', () => {
+    process.env['BASE_DOMAINS_DEFAULT'] = 'example.com';
+    const svc = new KcpKubernetesService();
+    expect(svc.getKcpWorkspacePublicUrl('org1', 'acc1')).toBe(
+      'https://kcp.api.example.com/clusters/root:orgs:org1:acc1',
+    );
+  });
+
+  it('builds public workspace url without account', () => {
+    process.env['BASE_DOMAINS_DEFAULT'] = 'example.com';
+    const svc = new KcpKubernetesService();
+    expect(svc.getKcpWorkspacePublicUrl('org1', '')).toBe(
+      'https://kcp.api.example.com/clusters/root:orgs:org1',
+    );
+  });
 });
