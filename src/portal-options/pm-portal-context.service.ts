@@ -26,13 +26,16 @@ export class PMPortalContextService implements PortalContextProvider {
     });
 
     this.processGraphQLGatewayApiUrl(request, portalContext);
-    this.addKcpWorkspaceUrl(portalContext);
+    this.addKcpWorkspaceUrl(request, portalContext);
     return Promise.resolve(portalContext);
   }
 
-  private addKcpWorkspaceUrl(portalContext) {
+  private addKcpWorkspaceUrl(request, portalContext) {
+    const organization = getOrganization(request);
+    const account = request.query?.['core_platform-mesh_io_account'];
+
     portalContext.kcpWorkspaceUrl =
-      this.kcpKubernetesService.getKcpWorkspacePublicUrl();
+      this.kcpKubernetesService.getKcpWorkspacePublicUrl(organization, account);
   }
 
   private processGraphQLGatewayApiUrl(
