@@ -7,11 +7,7 @@ export const getOrganization = (request: Request): string => {
   return request.hostname !== baseDomain ? subDomain : clientId;
 };
 
-
 export const getDiscoveryEndpoint = (request: Request): string => {
   const clientId = getOrganization(request);
-  return process.env[`DISCOVERY_ENDPOINT`]?.replace(
-      '${org-name}',
-      clientId,
-  );
-}
+  return process.env[`DISCOVERY_ENDPOINT`]?.replace('${org-name}', clientId);
+};

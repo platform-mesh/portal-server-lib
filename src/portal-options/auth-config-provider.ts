@@ -1,4 +1,4 @@
-import {getDiscoveryEndpoint, getOrganization} from './utils/domain.js';
+import { getDiscoveryEndpoint, getOrganization } from './utils/domain.js';
 import { CoreV1Api, KubeConfig } from '@kubernetes/client-node';
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import {
@@ -52,7 +52,7 @@ export class PMAuthConfigProvider implements AuthConfigService {
       oauthServerUrl,
       oauthTokenUrl,
       oidcIssuerUrl: oidc?.issuer,
-      endSessionUrl: oidc?.end_session_endpoint
+      endSessionUrl: oidc?.end_session_endpoint,
     };
   }
 
