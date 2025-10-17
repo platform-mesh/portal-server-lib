@@ -34,9 +34,8 @@ export class PMPortalContextService implements PortalContextProvider {
     const organization = getOrganization(request);
     const account = request.query?.['core_platform-mesh_io_account'];
 
-    portalContext.kcpWorkspaceUrl = this.kcpKubernetesService
-      .getKcpWorkspaceUrl(organization, account)
-      ?.toString();
+    portalContext.kcpWorkspaceUrl =
+      this.kcpKubernetesService.getKcpWorkspacePublicUrl(organization, account);
   }
 
   private processGraphQLGatewayApiUrl(

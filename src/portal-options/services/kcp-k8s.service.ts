@@ -47,4 +47,10 @@ export class KcpKubernetesService {
     const path = this.buildWorkspacePath(organization, account);
     return new URL(`${this.baseUrl.origin}/clusters/${path}`);
   }
+
+  getKcpWorkspacePublicUrl(organization: string, account: string) {
+    const path = this.buildWorkspacePath(organization, account);
+    const baseDomain = process.env['BASE_DOMAINS_DEFAULT'];
+    return `https://kcp.api.${baseDomain}/clusters/${path}`;
+  }
 }
