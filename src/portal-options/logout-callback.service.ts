@@ -52,8 +52,8 @@ export class PMLogoutService implements LogoutCallback {
   private logoutWithIdToken(request: Request, endSessionUrl: string) {
     const { id_token_hint, post_logout_redirect_uri } = request.query;
     const params = new URLSearchParams({
-      id_token_hint: String(id_token_hint),
-      post_logout_redirect_uri: String(post_logout_redirect_uri),
+      id_token_hint: String(id_token_hint || ''),
+      post_logout_redirect_uri: String(post_logout_redirect_uri || ''),
     });
     return `${endSessionUrl}?${params}`;
   }
