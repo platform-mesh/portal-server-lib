@@ -1,0 +1,4 @@
+# Default code owners
+* @platform-mesh/tsc @platform-mesh/ui-approvers @platform-mesh/frame
+package.json
+package-lock.json
