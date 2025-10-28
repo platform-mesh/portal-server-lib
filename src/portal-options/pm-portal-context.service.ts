@@ -1,3 +1,4 @@
+import { PortalContext } from './models/luigi-context.js';
 import { KcpKubernetesService } from './services/kcp-k8s.service.js';
 import { getOrganization } from './utils/domain.js';
 import { Injectable } from '@nestjs/common';
@@ -11,8 +12,8 @@ export class PMPortalContextService implements PortalContextProvider {
 
   constructor(private kcpKubernetesService: KcpKubernetesService) {}
 
-  getContextValues(request: Request): Promise<Record<string, any>> {
-    const portalContext: Record<string, any> = {};
+  getContextValues(request: Request): Promise<PortalContext> {
+    const portalContext: PortalContext = {};
 
     const keys = Object.keys(process.env).filter((item) =>
       item.startsWith(this.openmfpPortalContext),
@@ -25,7 +26,7 @@ export class PMPortalContextService implements PortalContextProvider {
       }
     });
 
-    this.processGraphQLGatewayApiUrl(request, portalContext);
+    this.processDynamicApiUrls(request, portalContext);
     this.addKcpWorkspaceUrl(request, portalContext);
     return Promise.resolve(portalContext);
   }
@@ -38,16 +39,33 @@ export class PMPortalContextService implements PortalContextProvider {
       this.kcpKubernetesService.getKcpWorkspacePublicUrl(organization, account);
   }
 
-  private processGraphQLGatewayApiUrl(
+  private processDynamicApiUrls(
     request: Request,
-    portalContext: Record<string, any>,
+    portalContext: PortalContext,
   ): void {
     const org = getOrganization(request);
     const baseDomain = process.env['BASE_DOMAINS_DEFAULT'];
     const subDomain = request.hostname !== baseDomain ? `${org}.` : '';
-    portalContext.crdGatewayApiUrl = portalContext.crdGatewayApiUrl
-      ?.replace('${org-subdomain}', subDomain)
-      .replace('${org-name}', org);
+
+    const replacements = {
+      '${org-subdomain}': subDomain,
+      '${org-name}': org,
+    };
+
+    const replacePlaceholders = (url?: string) =>
+      url
+        ? Object.entries(replacements).reduce(
+            (acc, [key, value]) => acc.replace(key, value),
+            url,
+          )
+        : url;
+
+    portalContext.crdGatewayApiUrl = replacePlaceholders(
+      portalContext.crdGatewayApiUrl,
+    );
+    portalContext.iamServiceApiUrl = replacePlaceholders(
+      portalContext.iamServiceApiUrl,
+    );
   }
 
   private toCamelCase(text: string): string {
