@@ -1,3 +1,4 @@
+import { PortalContext } from './models/luigi-context.js';
 import { KcpKubernetesService } from './services/kcp-k8s.service.js';
 import { getOrganization } from './utils/domain.js';
 import { Injectable } from '@nestjs/common';
@@ -9,14 +10,21 @@ import process from 'node:process';
 export class PMPortalContextService implements PortalContextProvider {
   constructor(private kcpKubernetesService: KcpKubernetesService) {}
 
-  async getContextValues(request: Request, response: Response, portalContext: Record<string, any>): Promise<Record<string, any>> {
-    this.processGraphQLGatewayApiUrl(request, portalContext);
+  async getContextValues(
+    request: Request,
+    response: Response,
+    portalContext: PortalContext,
+  ): Promise<PortalContext> {
+    this.processDynamicApiUrls(request, portalContext);
     this.addKcpWorkspaceUrl(request, portalContext);
 
     return portalContext;
   }
 
-  private addKcpWorkspaceUrl(request: Request, portalContext: Record<string, any>) {
+  private addKcpWorkspaceUrl(
+    request: Request,
+    portalContext: Record<string, any>,
+  ) {
     const organization = getOrganization(request);
     const account = request.query?.['core_platform-mesh_io_account'];
 
@@ -24,15 +32,32 @@ export class PMPortalContextService implements PortalContextProvider {
       this.kcpKubernetesService.getKcpWorkspacePublicUrl(organization, account);
   }
 
-  private processGraphQLGatewayApiUrl(
+  private processDynamicApiUrls(
     request: Request,
-    portalContext: Record<string, any>,
+    portalContext: PortalContext,
   ): void {
     const org = getOrganization(request);
     const baseDomain = process.env['BASE_DOMAINS_DEFAULT'];
     const subDomain = request.hostname !== baseDomain ? `${org}.` : '';
-    portalContext.crdGatewayApiUrl = portalContext.crdGatewayApiUrl
-      ?.replace('${org-subdomain}', subDomain)
-      .replace('${org-name}', org);
+
+    const replacements = {
+      '${org-subdomain}': subDomain,
+      '${org-name}': org,
+    };
+
+    const replacePlaceholders = (url?: string) =>
+      url
+        ? Object.entries(replacements).reduce(
+            (acc, [key, value]) => acc.replace(key, value),
+            url,
+          )
+        : url;
+
+    portalContext.crdGatewayApiUrl = replacePlaceholders(
+      portalContext.crdGatewayApiUrl,
+    );
+    portalContext.iamServiceApiUrl = replacePlaceholders(
+      portalContext.iamServiceApiUrl,
+    );
   }
 }
