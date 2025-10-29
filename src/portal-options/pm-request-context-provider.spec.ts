@@ -48,8 +48,9 @@ describe('PMRequestContextProvider', () => {
       query: { account: 'acc-123', extra: '1' },
       hostname: 'org1.example.com',
     } as unknown as Request;
+    const res = new Response();
 
-    const result = await provider.getContextValues(req);
+    const result = await provider.getContextValues(req, res);
 
     expect(result).toMatchObject({
       account: 'acc-123',
@@ -62,7 +63,7 @@ describe('PMRequestContextProvider', () => {
     expect(mockedGetOrganization).toHaveBeenCalledWith(req);
     expect(portalContextService.getContextValues).toHaveBeenCalledWith(
       req,
-      expect.any(Response),
+      res,
     );
   });
 });

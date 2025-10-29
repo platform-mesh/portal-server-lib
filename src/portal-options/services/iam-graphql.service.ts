@@ -8,9 +8,15 @@ import { GraphQLClient } from 'graphql-request';
 export class IAMGraphQlService {
   constructor(private requestContextProvider: PMRequestContextProvider) {}
 
-  async addUser(token: string, request: Request): Promise<void> {
-    const requestContext =
-      await this.requestContextProvider.getContextValues(request);
+  async addUser(
+    token: string,
+    request: Request,
+    response: Response,
+  ): Promise<void> {
+    const requestContext = await this.requestContextProvider.getContextValues(
+      request,
+      response,
+    );
     const iamUrl = requestContext.iamServiceApiUrl;
     const client = new GraphQLClient(iamUrl, {
       headers: {

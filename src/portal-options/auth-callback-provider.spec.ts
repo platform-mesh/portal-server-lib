@@ -54,7 +54,7 @@ describe('AuthCallbackProvider', () => {
     } as AuthTokenData);
 
     expect(iamServiceMock.addUser).toHaveBeenCalledTimes(1);
-    expect(iamServiceMock.addUser).toHaveBeenCalledWith('idtoken', req);
+    expect(iamServiceMock.addUser).toHaveBeenCalledWith('idtoken', req, res);
   });
 
   it('should log error if addUser throws', async () => {
@@ -64,7 +64,7 @@ describe('AuthCallbackProvider', () => {
     (iamServiceMock.addUser as jest.Mock).mockRejectedValueOnce(error);
 
     const errorSpy = jest
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
       .spyOn((callback as any).logger, 'error')
       .mockImplementation(() => undefined as unknown as never);
 

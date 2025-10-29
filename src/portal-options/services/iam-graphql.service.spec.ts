@@ -57,7 +57,7 @@ describe('IAMGraphQlService', () => {
   it('should call mutation addUser', async () => {
     (gqlClient.request as jest.Mock).mockResolvedValue('');
 
-    const response = await service.addUser('token', {} as any);
+    const response = await service.addUser('token', {} as any, {} as any);
 
     expect(GraphQLClientMock).toHaveBeenCalledWith(mockIamServiceApiUrl, {
       headers: { Authorization: 'Bearer token' },
@@ -70,7 +70,7 @@ describe('IAMGraphQlService', () => {
     console.error = jest.fn();
     (gqlClient.request as jest.Mock).mockRejectedValue('error');
 
-    const response = await service.addUser('token', {} as any);
+    const response = await service.addUser('token', {} as any, {} as any);
     expect(response).toBe(undefined);
     expect(console.error).toHaveBeenCalledWith('error');
   });

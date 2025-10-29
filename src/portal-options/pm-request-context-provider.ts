@@ -17,15 +17,15 @@ export interface RequestContext extends Record<string, any> {
 export class PMRequestContextProvider implements RequestContextProvider {
   constructor(private portalContextService: PortalContextProviderImpl) {}
 
-  async getContextValues(request: Request): Promise<RequestContext> {
+  async getContextValues(
+    request: Request,
+    response: Response,
+  ): Promise<RequestContext> {
     const organization = getOrganization(request);
     const baseDomain = process.env['BASE_DOMAINS_DEFAULT'];
     return {
       ...request.query,
-      ...(await this.portalContextService.getContextValues(
-        request,
-        new Response(),
-      )),
+      ...(await this.portalContextService.getContextValues(request, response)),
       organization,
       isSubDomain: request.hostname !== baseDomain,
     };
