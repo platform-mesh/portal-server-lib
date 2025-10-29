@@ -176,9 +176,6 @@ describe('PMPortalContextService', () => {
   });
 
   it('should process GraphQL gateway API URL without subdomain when hostname matches domain', async () => {
-    kcpKubernetesServiceMock.getKcpWorkspacePublicUrl.mockReturnValue(
-      'https://kcp.api.example.com/clusters/root:orgs:test-org',
-    );
     mockedGetDomainAndOrganization.mockReturnValue('test-org');
     process.env['BASE_DOMAINS_DEFAULT'] = 'example.com';
     mockRequest.hostname = 'example.com';
@@ -186,14 +183,17 @@ describe('PMPortalContextService', () => {
     const result = await service.getContextValues(
       mockRequest as Request,
       new Response(),
-      {},
+      {
+        crdGatewayApiUrl:
+          'https://${org-subdomain}api.example.com/${org-name}/graphql',
+      },
     );
 
-    expect(result).toEqual({
-      crdGatewayApiUrl: undefined,
-      kcpWorkspaceUrl:
-        'https://kcp.api.example.com/clusters/root:orgs:test-org',
-    });
+    delete process.env.OPENMFP_PORTAL_CONTEXT_CRD_GATEWAY_API_URL;
+
+    expect(result.crdGatewayApiUrl).toBe(
+      'https://api.example.com/test-org/graphql',
+    );
   });
 
   it('should return context with kcp workspace url and undefined crdGatewayApiUrl for empty environment', async () => {
