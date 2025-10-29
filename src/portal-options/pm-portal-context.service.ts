@@ -3,7 +3,7 @@ import { KcpKubernetesService } from './services/kcp-k8s.service.js';
 import { getOrganization } from './utils/domain.js';
 import { Injectable } from '@nestjs/common';
 import { PortalContextProvider } from '@openmfp/portal-server-lib';
-import type { Request } from 'express';
+import type { Request, Response } from 'express';
 import process from 'node:process';
 
 @Injectable()
