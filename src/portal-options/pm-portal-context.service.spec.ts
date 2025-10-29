@@ -77,102 +77,49 @@ describe('PMPortalContextService', () => {
     });
   });
 
-  it('should return context with kcp workspace url when no environment variables match prefix', async () => {
-    kcpKubernetesServiceMock.getKcpWorkspacePublicUrl.mockReturnValue(
-      'https://kcp.api.example.com/clusters/root:orgs:test-org',
-    );
-    mockedGetDomainAndOrganization.mockReturnValue('test-org');
-
+  it('should return empty context when no environment variables match prefix', async () => {
     const result = await service.getContextValues(
       mockRequest as Request,
       new Response(),
       {},
     );
 
-    expect(result).toEqual({
-      crdGatewayApiUrl: undefined,
-      kcpWorkspaceUrl:
-        'https://kcp.api.example.com/clusters/root:orgs:test-org',
-    });
-  });
-
-  it('should return context with kcp workspace url and undefined crdGatewayApiUrl', async () => {
-    kcpKubernetesServiceMock.getKcpWorkspacePublicUrl.mockReturnValue(
-      'https://kcp.api.example.com/clusters/root:orgs:test-org',
-    );
-
-    const result = await service.getContextValues(
-      mockRequest as Request,
-      new Response(),
-      {},
-    );
-
-    expect(result).toEqual({
-      crdGatewayApiUrl: undefined,
-      kcpWorkspaceUrl:
-        'https://kcp.api.example.com/clusters/root:orgs:test-org',
-    });
-  });
-
-  it('should return context with kcp workspace url and undefined crdGatewayApiUrl for different organization', async () => {
-    kcpKubernetesServiceMock.getKcpWorkspacePublicUrl.mockReturnValue(
-      'https://kcp.api.example.com/clusters/root:orgs:test-org',
-    );
-    mockedGetDomainAndOrganization.mockReturnValue('test-org');
-
-    const result = await service.getContextValues(
-      mockRequest as Request,
-      new Response(),
-      {},
-    );
-
-    expect(result).toEqual({
-      crdGatewayApiUrl: undefined,
-      kcpWorkspaceUrl:
-        'https://kcp.api.example.com/clusters/root:orgs:test-org',
-    });
+    expect(result).toEqual({});
   });
 
   it('should process GraphQL gateway API URL with subdomain when hostname differs from domain', async () => {
-    kcpKubernetesServiceMock.getKcpWorkspacePublicUrl.mockReturnValue(
-      'https://kcp.api.example.com/clusters/root:orgs:test-org',
-    );
     mockedGetDomainAndOrganization.mockReturnValue('test-org');
+
     mockRequest.hostname = 'subdomain.example.com';
 
     const result = await service.getContextValues(
       mockRequest as Request,
       new Response(),
-      {},
+      {
+        crdGatewayApiUrl:
+          'https://${org-subdomain}api.example.com/${org-name}/graphql',
+      },
     );
 
-    expect(result).toEqual({
-      crdGatewayApiUrl: undefined,
-      kcpWorkspaceUrl:
-        'https://kcp.api.example.com/clusters/root:orgs:test-org',
-    });
+    expect(result.crdGatewayApiUrl).toBe(
+      'https://test-org.api.example.com/test-org/graphql',
+    );
   });
 
   it('should process GraphQL IAM API URL with subdomain', async () => {
-    try {
-      mockedGetDomainAndOrganization.mockReturnValue('test-org');
+    mockedGetDomainAndOrganization.mockReturnValue('test-org');
 
-      mockRequest.hostname = 'example.com';
+    mockRequest.hostname = 'example.com';
 
-      const result = await service.getContextValues(
-        mockRequest as Request,
-        new Response(),
-        {
-          iamServiceApiUrl: 'https://${org-subdomain}example.com/iam/graphql',
-        },
-      );
+    const result = await service.getContextValues(
+      mockRequest as Request,
+      new Response(),
+      { iamServiceApiUrl: 'https://${org-subdomain}example.com/iam/graphql' },
+    );
 
-      expect(result.iamServiceApiUrl).toBe(
-        'https://test-org.example.com/iam/graphql',
-      );
-    } finally {
-      delete process.env.OPENMFP_PORTAL_CONTEXT_IAM_SERVICE_API_URL;
-    }
+    expect(result.iamServiceApiUrl).toBe(
+      'https://test-org.example.com/iam/graphql',
+    );
   });
 
   it('should process GraphQL gateway API URL without subdomain when hostname matches domain', async () => {
@@ -189,48 +136,20 @@ describe('PMPortalContextService', () => {
       },
     );
 
-    delete process.env.OPENMFP_PORTAL_CONTEXT_CRD_GATEWAY_API_URL;
-
     expect(result.crdGatewayApiUrl).toBe(
       'https://api.example.com/test-org/graphql',
     );
   });
 
-  it('should return context with kcp workspace url and undefined crdGatewayApiUrl for empty environment', async () => {
-    kcpKubernetesServiceMock.getKcpWorkspacePublicUrl.mockReturnValue(
-      'https://kcp.api.example.com/clusters/root:orgs:test-org',
-    );
-    mockedGetDomainAndOrganization.mockReturnValue('test-org');
-
-    const result = await service.getContextValues(
-      mockRequest as Request,
-      new Response(),
-      {},
-    );
-
-    expect(result).toEqual({
-      crdGatewayApiUrl: undefined,
-      kcpWorkspaceUrl:
-        'https://kcp.api.example.com/clusters/root:orgs:test-org',
-    });
-  });
-
   it('should handle undefined crdGatewayApiUrl gracefully', async () => {
-    kcpKubernetesServiceMock.getKcpWorkspacePublicUrl.mockReturnValue(
-      'https://kcp.api.example.com/clusters/root:orgs:test-org',
-    );
-    mockedGetDomainAndOrganization.mockReturnValue('test-org');
-
     const result = await service.getContextValues(
       mockRequest as Request,
       new Response(),
-      {},
+      { otherKey: 'value' },
     );
 
     expect(result).toEqual({
-      crdGatewayApiUrl: undefined,
-      kcpWorkspaceUrl:
-        'https://kcp.api.example.com/clusters/root:orgs:test-org',
+      otherKey: 'value',
     });
   });
 });
