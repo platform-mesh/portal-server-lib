@@ -4,7 +4,7 @@ import {
   PortalContextProviderImpl,
   RequestContextProvider,
 } from '@openmfp/portal-server-lib';
-import type { Request } from 'express';
+import type { Request, Response } from 'express';
 
 export interface RequestContext extends Record<string, any> {
   account?: string;
