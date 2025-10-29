@@ -23,7 +23,7 @@ export class PMPortalContextService implements PortalContextProvider {
 
   private addKcpWorkspaceUrl(
     request: Request,
-    portalContext: Record<string, any>,
+    portalContext: PortalContext,
   ) {
     const organization = getOrganization(request);
     const account = request.query?.['core_platform-mesh_io_account'];
