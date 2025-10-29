@@ -154,15 +154,18 @@ describe('PMPortalContextService', () => {
   });
 
   it('should process GraphQL IAM API URL with subdomain', async () => {
-    process.env.OPENMFP_PORTAL_CONTEXT_IAM_SERVICE_API_URL =
-      'https://${org-subdomain}example.com/iam/graphql';
-
     try {
       mockedGetDomainAndOrganization.mockReturnValue('test-org');
 
       mockRequest.hostname = 'example.com';
 
-      const result = await service.getContextValues(mockRequest as Request);
+      const result = await service.getContextValues(
+        mockRequest as Request,
+        new Response(),
+        {
+          iamServiceApiUrl: 'https://${org-subdomain}example.com/iam/graphql',
+        },
+      );
 
       expect(result.iamServiceApiUrl).toBe(
         'https://test-org.example.com/iam/graphql',
