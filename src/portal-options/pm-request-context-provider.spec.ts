@@ -1,6 +1,6 @@
-import { PMPortalContextService } from './pm-portal-context.service.js';
 import { PMRequestContextProvider } from './pm-request-context-provider.js';
 import { getOrganization } from './utils/domain.js';
+import { PortalContextProviderImpl } from '@openmfp/portal-server-lib';
 import type { Request } from 'express';
 import { mock } from 'jest-mock-extended';
 
@@ -27,7 +27,7 @@ jest.mock('./utils/domain.js', () => ({
 
 describe('PMRequestContextProvider', () => {
   let provider: PMRequestContextProvider;
-  const portalContextService = mock<PMPortalContextService>();
+  const portalContextService = mock<PortalContextProviderImpl>();
   const mockedGetOrganization = jest.mocked(getOrganization);
 
   beforeEach(() => {
@@ -60,6 +60,9 @@ describe('PMRequestContextProvider', () => {
     });
 
     expect(mockedGetOrganization).toHaveBeenCalledWith(req);
-    expect(portalContextService.getContextValues).toHaveBeenCalledWith(req);
+    expect(portalContextService.getContextValues).toHaveBeenCalledWith(
+      req,
+      expect.any(Response),
+    );
   });
 });

@@ -66,7 +66,11 @@ describe('PMPortalContextService', () => {
       'https://kcp.api.example.com/',
     );
 
-    const result = await service.getContextValues(mockRequest as Request);
+    const result = await service.getContextValues(
+      mockRequest as Request,
+      new Response(),
+      {},
+    );
 
     expect(result).toEqual({
       kcpWorkspaceUrl: 'https://kcp.api.example.com/',
@@ -79,7 +83,11 @@ describe('PMPortalContextService', () => {
     );
     mockedGetDomainAndOrganization.mockReturnValue('test-org');
 
-    const result = await service.getContextValues(mockRequest as Request);
+    const result = await service.getContextValues(
+      mockRequest as Request,
+      new Response(),
+      {},
+    );
 
     expect(result).toEqual({
       crdGatewayApiUrl: undefined,
@@ -93,7 +101,11 @@ describe('PMPortalContextService', () => {
       'https://kcp.api.example.com/clusters/root:orgs:test-org',
     );
 
-    const result = await service.getContextValues(mockRequest as Request);
+    const result = await service.getContextValues(
+      mockRequest as Request,
+      new Response(),
+      {},
+    );
 
     expect(result).toEqual({
       crdGatewayApiUrl: undefined,
@@ -108,7 +120,11 @@ describe('PMPortalContextService', () => {
     );
     mockedGetDomainAndOrganization.mockReturnValue('test-org');
 
-    const result = await service.getContextValues(mockRequest as Request);
+    const result = await service.getContextValues(
+      mockRequest as Request,
+      new Response(),
+      {},
+    );
 
     expect(result).toEqual({
       crdGatewayApiUrl: undefined,
@@ -124,7 +140,11 @@ describe('PMPortalContextService', () => {
     mockedGetDomainAndOrganization.mockReturnValue('test-org');
     mockRequest.hostname = 'subdomain.example.com';
 
-    const result = await service.getContextValues(mockRequest as Request);
+    const result = await service.getContextValues(
+      mockRequest as Request,
+      new Response(),
+      {},
+    );
 
     expect(result).toEqual({
       crdGatewayApiUrl: undefined,
@@ -141,7 +161,11 @@ describe('PMPortalContextService', () => {
     process.env['BASE_DOMAINS_DEFAULT'] = 'example.com';
     mockRequest.hostname = 'example.com';
 
-    const result = await service.getContextValues(mockRequest as Request);
+    const result = await service.getContextValues(
+      mockRequest as Request,
+      new Response(),
+      {},
+    );
 
     expect(result).toEqual({
       crdGatewayApiUrl: undefined,
@@ -156,7 +180,11 @@ describe('PMPortalContextService', () => {
     );
     mockedGetDomainAndOrganization.mockReturnValue('test-org');
 
-    const result = await service.getContextValues(mockRequest as Request);
+    const result = await service.getContextValues(
+      mockRequest as Request,
+      new Response(),
+      {},
+    );
 
     expect(result).toEqual({
       crdGatewayApiUrl: undefined,
@@ -171,7 +199,11 @@ describe('PMPortalContextService', () => {
     );
     mockedGetDomainAndOrganization.mockReturnValue('test-org');
 
-    const result = await service.getContextValues(mockRequest as Request);
+    const result = await service.getContextValues(
+      mockRequest as Request,
+      new Response(),
+      {},
+    );
 
     expect(result).toEqual({
       crdGatewayApiUrl: undefined,

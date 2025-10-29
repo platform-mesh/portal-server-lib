@@ -9,15 +9,14 @@ import process from 'node:process';
 export class PMPortalContextService implements PortalContextProvider {
   constructor(private kcpKubernetesService: KcpKubernetesService) {}
 
-  getContextValues(request: Request): Promise<Record<string, any>> {
-    const portalContext: Record<string, any> = {};
-
+  async getContextValues(request: Request, response: Response, portalContext: Record<string, any>): Promise<Record<string, any>> {
     this.processGraphQLGatewayApiUrl(request, portalContext);
     this.addKcpWorkspaceUrl(request, portalContext);
-    return Promise.resolve(portalContext);
+
+    return portalContext;
   }
 
-  private addKcpWorkspaceUrl(request, portalContext) {
+  private addKcpWorkspaceUrl(request: Request, portalContext: Record<string, any>) {
     const organization = getOrganization(request);
     const account = request.query?.['core_platform-mesh_io_account'];
 
