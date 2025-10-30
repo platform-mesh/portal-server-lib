@@ -57,3 +57,7 @@ pids
 report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 /yalc.lock
 /.yalc/
+
+#AI Tools
+.claude
+CLAUDE.local.md
