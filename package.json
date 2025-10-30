@@ -1,9 +1,12 @@
 {
   "name": "@platform-mesh/portal-server-lib",
   "version": "0.5.0",
-  "description": "",
-  "author": "",
-  "license": "UNLICENSED",
+  "author": "Platform Mesh",
+  "license": "Apache-2.0",
+  "repository": {
+    "url": "git+https://github.com/platform-mesh/portal-server-lib.git"
+  },
+  "description": "This library helps you to set up the backend application using @openmfp/portal-server-lib by providing the set of the required implementations \nin the scope of the Platform Mesh functionalities.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "exports": {
