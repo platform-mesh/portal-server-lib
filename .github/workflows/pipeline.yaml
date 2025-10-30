@@ -16,3 +16,5 @@ jobs:
   pipe:
     uses: platform-mesh/.github/.github/workflows/pipeline-node-module.yml@main
     secrets: inherit
+    with:
+      environment: npmjs:@platform-mesh/portal-server-lib
