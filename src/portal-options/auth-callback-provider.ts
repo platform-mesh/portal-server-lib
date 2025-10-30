@@ -15,7 +15,7 @@ export class AuthCallbackProvider implements AuthCallback {
     authTokenResponse: AuthTokenData,
   ): Promise<void> {
     try {
-      await this.iamService.addUser(authTokenResponse.id_token, request);
+      await this.iamService.addUser(authTokenResponse.id_token, request, response);
     } catch (e) {
       this.logger.error(e);
     }

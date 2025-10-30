@@ -1,16 +1,22 @@
 import { PMRequestContextProvider } from '../pm-request-context-provider.js';
 import { MUTATION_LOGIN } from './queries.js';
 import { Injectable } from '@nestjs/common';
-import type { Request } from 'express';
+import type { Request, Response } from 'express';
 import { GraphQLClient } from 'graphql-request';
 
 @Injectable()
 export class IAMGraphQlService {
   constructor(private requestContextProvider: PMRequestContextProvider) {}
 
-  async addUser(token: string, request: Request): Promise<void> {
-    const requestContext =
-      await this.requestContextProvider.getContextValues(request);
+  async addUser(
+    token: string,
+    request: Request,
+    response: Response,
+  ): Promise<void> {
+    const requestContext = await this.requestContextProvider.getContextValues(
+      request,
+      response,
+    );
     const iamUrl = requestContext.iamServiceApiUrl;
     const client = new GraphQLClient(iamUrl, {
       headers: {

@@ -1,8 +1,10 @@
-import { PMPortalContextService } from './pm-portal-context.service.js';
 import { getOrganization } from './utils/domain.js';
 import { Injectable } from '@nestjs/common';
-import { RequestContextProvider } from '@openmfp/portal-server-lib';
-import type { Request } from 'express';
+import {
+  PortalContextProviderImpl,
+  RequestContextProvider,
+} from '@openmfp/portal-server-lib';
+import type { Request, Response } from 'express';
 
 export interface RequestContext extends Record<string, any> {
   account?: string;
@@ -13,14 +15,17 @@ export interface RequestContext extends Record<string, any> {
 
 @Injectable()
 export class PMRequestContextProvider implements RequestContextProvider {
-  constructor(private pmPortalContextService: PMPortalContextService) {}
+  constructor(private portalContextService: PortalContextProviderImpl) {}
 
-  async getContextValues(request: Request): Promise<RequestContext> {
+  async getContextValues(
+    request: Request,
+    response: Response,
+  ): Promise<RequestContext> {
     const organization = getOrganization(request);
     const baseDomain = process.env['BASE_DOMAINS_DEFAULT'];
     return {
       ...request.query,
-      ...(await this.pmPortalContextService.getContextValues(request)),
+      ...(await this.portalContextService.getContextValues(request, response)),
       organization,
       isSubDomain: request.hostname !== baseDomain,
     };
