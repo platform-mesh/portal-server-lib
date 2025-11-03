@@ -1,5 +1,7 @@
+import { getOrganization } from '../utils/domain.js';
 import { CustomObjectsApi, KubeConfig } from '@kubernetes/client-node';
 import { Injectable } from '@nestjs/common';
+import type { Request } from 'express';
 
 @Injectable()
 export class KcpKubernetesService {
@@ -7,7 +9,7 @@ export class KcpKubernetesService {
   private readonly baseUrl: URL;
 
   constructor() {
-    const kubeConfigKcp = process.env['KUBECONFIG_KCP'];
+    const kubeConfigKcp = process.env.KUBECONFIG_KCP;
     const kc = new KubeConfig();
     kc.loadFromFile(kubeConfigKcp);
     // Temporary change to test.
@@ -48,9 +50,28 @@ export class KcpKubernetesService {
     return new URL(`${this.baseUrl.origin}/clusters/${path}`);
   }
 
-  getKcpWorkspacePublicUrl(organization: string, account: string) {
+  getKcpWorkspacePublicUrl(request: Request) {
+    const organization = getOrganization(request);
+    const account = request.query?.['core_platform-mesh_io_account'];
     const path = this.buildWorkspacePath(organization, account);
-    const baseDomain = process.env['BASE_DOMAINS_DEFAULT'];
-    return `https://kcp.api.${baseDomain}/clusters/${path}`;
+
+    const baseDomain = process.env.BASE_DOMAINS_DEFAULT;
+    const port = this.getAppPort(request);
+
+    return `https://kcp.api.${baseDomain}${port}/clusters/${path}`;
+  }
+
+  private getAppPort(request: Request): string {
+    const forwardedPort = request.headers['x-forwarded-port'];
+    const forwardedPortValue = Array.isArray(forwardedPort)
+      ? forwardedPort[0]
+      : forwardedPort;
+    const requestHostPort = request.headers.host?.split(':')[1];
+    const portFromRequest =
+      process.env.FRONTEND_PORT || forwardedPortValue || requestHostPort || '';
+
+    const isStandardOrEmptyPort =
+      portFromRequest === '80' || portFromRequest === '443' || !portFromRequest;
+    return isStandardOrEmptyPort ? '' : `:${portFromRequest}`;
   }
 }
