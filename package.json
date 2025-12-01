@@ -42,7 +42,7 @@
     "@openmfp/portal-server-lib": "0.163.1",
     "axios": "1.13.2",
     "cookie-parser": "1.4.7",
-    "express": "5.1.0",
+    "express": "5.2.0",
     "rxjs": "7.8.2",
     "graphql-request": "7.3.5",
     "@kubernetes/client-node": "1.4.0"
@@ -53,7 +53,7 @@
     "@nestjs/serve-static": "5.0.4",
     "@openmfp/portal-server-lib": "0.163.1",
     "axios": "1.13.2",
-    "express": "5.1.0",
+    "express": "5.2.0",
     "rxjs": "7.8.2"
   },
   "devDependencies": {
