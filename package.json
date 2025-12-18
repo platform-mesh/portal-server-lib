@@ -1,6 +1,6 @@
 {
   "name": "@platform-mesh/portal-server-lib",
-  "version": "0.5.38",
+  "version": "0.5.40",
   "author": "Platform Mesh",
   "license": "Apache-2.0",
   "publishConfig": {
@@ -37,28 +37,20 @@
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand"
   },
   "peerDependencies": {
-    "@nestjs/axios": "4.0.1",
-    "@nestjs/common": "11.1.9",
-    "@nestjs/core": "11.1.9",
-    "@nestjs/platform-express": "11.1.9",
-    "@nestjs/serve-static": "5.0.4",
-    "@openmfp/portal-server-lib": "0.163.1",
-    "axios": "1.13.2",
-    "cookie-parser": "1.4.7",
-    "express": "5.2.1",
-    "rxjs": "7.8.2",
-    "graphql-request": "7.4.0",
-    "@kubernetes/client-node": "1.4.0"
+    "@nestjs/axios": "^4.0.1",
+    "@nestjs/common": "^11.1.9",
+    "@nestjs/core": "^11.1.9",
+    "@nestjs/platform-express": "^11.1.9",
+    "@nestjs/serve-static": "^5.0.4",
+    "@openmfp/portal-server-lib": "^0.163.7",
+    "axios": "^1.13.2",
+    "cookie-parser": "^1.4.7",
+    "express": "^5.2.1",
+    "rxjs": "^7.8.2",
+    "graphql-request": "^7.4.0",
+    "@kubernetes/client-node": "^1.4.0"
   },
-  "dependencies": {
-    "@nestjs/axios": "4.0.1",
-    "@nestjs/common": "11.1.9",
-    "@nestjs/serve-static": "5.0.4",
-    "@openmfp/portal-server-lib": "0.163.1",
-    "axios": "1.13.2",
-    "express": "5.2.1",
-    "rxjs": "7.8.2"
-  },
+  "dependencies": {},
   "devDependencies": {
     "@eslint/js": "9.39.2",
     "@nestjs/cli": "11.0.14",
@@ -79,12 +71,12 @@
     "prettier": "3.7.4",
     "rimraf": "6.1.2",
     "supertest": "7.1.4",
-    "ts-jest": "29.4.5",
+    "ts-jest": "29.4.6",
     "ts-loader": "9.5.4",
     "ts-node": "10.9.2",
     "tsconfig-paths": "4.2.0",
     "typescript": "5.9.3",
-    "typescript-eslint": "8.46.3"
+    "typescript-eslint": "8.50.0"
   },
   "type": "module"
 }
