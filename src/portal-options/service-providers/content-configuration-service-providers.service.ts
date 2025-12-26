@@ -1,4 +1,5 @@
 import { RequestContext } from '../pm-request-context-provider.js';
+import { processContentConfigurationForAccountHierarchy } from '../utils/account-hierarchy-resolver.js';
 import { contentConfigurationsQuery } from './contentconfigurations-query.js';
 import { ContentConfigurationQueryResponse } from './models/contentconfigurations.js';
 import { welcomeNodeConfig } from './models/welcome-node-config.js';
@@ -35,10 +36,10 @@ export class ContentConfigurationServiceProvidersService implements ServiceProvi
       'kubernetes-graphql-gateway/virtual-workspace/contentconfigurations/root',
     );
 
-    console.log(url, token);
-    const platformMeshAccountId = context?.['core_platform-mesh_io_account'];
-    if (platformMeshAccountId) {
-      url = url.replace('/graphql', `:${platformMeshAccountId}/graphql`);
+    const accountPath =
+      context?.accountPath ?? context?.['core_platform-mesh_io_account'];
+    if (accountPath) {
+      url = url.replace('/graphql', `:${accountPath}/graphql`);
     }
 
     console.log(`Calculated crd gateway api url: ${url}`);
@@ -84,6 +85,14 @@ export class ContentConfigurationServiceProvidersService implements ServiceProvi
               if (!contentConfiguration.url) {
                 contentConfiguration.url = item.spec.remoteConfiguration?.url;
               }
+
+              if (context.accountPath) {
+                processContentConfigurationForAccountHierarchy(
+                  contentConfiguration,
+                  context.accountPath,
+                );
+              }
+
               return contentConfiguration;
             } catch (parseError) {
               // Log the error but don't fail the entire operation
