@@ -11,9 +11,7 @@ import {
 import { GraphQLClient } from 'graphql-request';
 
 @Injectable()
-export class ContentConfigurationServiceProvidersService
-  implements ServiceProviderService
-{
+export class ContentConfigurationServiceProvidersService implements ServiceProviderService {
   async getServiceProviders(
     token: string,
     entities: string[],
@@ -37,6 +35,7 @@ export class ContentConfigurationServiceProvidersService
       'kubernetes-graphql-gateway/virtual-workspace/contentconfigurations/root',
     );
 
+    console.log(url, token);
     const platformMeshAccountId = context?.['core_platform-mesh_io_account'];
     if (platformMeshAccountId) {
       url = url.replace('/graphql', `:${platformMeshAccountId}/graphql`);
@@ -64,45 +63,47 @@ export class ContentConfigurationServiceProvidersService
 
       const entity = !entities || !entities.length ? 'main' : entities[0];
       const contentConfigurations =
-        response.ui_platform_mesh_io.ContentConfigurations.filter(
-          (item) =>
-            item.metadata.labels?.['ui.platform-mesh.io/entity'] === entity,
-        ).map((item) => {
-          try {
-            // Validate required fields
-            if (!item.status?.configurationResult) {
+        response.ui_platform_mesh_io.ContentConfigurations.items
+          .filter(
+            (item) =>
+              item.metadata.labels?.['ui.platform-mesh.io/entity'] === entity,
+          )
+          .map((item) => {
+            try {
+              // Validate required fields
+              if (!item.status?.configurationResult) {
+                throw new Error(
+                  `Missing configurationResult for item: ${item.metadata?.name || 'unknown'}`,
+                );
+              }
+
+              const contentConfiguration = JSON.parse(
+                item.status.configurationResult,
+              ) as ContentConfiguration;
+
+              if (!contentConfiguration.url) {
+                contentConfiguration.url = item.spec.remoteConfiguration?.url;
+              }
+              return contentConfiguration;
+            } catch (parseError) {
+              // Log the error but don't fail the entire operation
+              console.error(
+                `Failed to parse configuration for item ${item.metadata?.name || 'unknown'}:`,
+                parseError,
+              );
+
+              // Re-throw specific errors as-is, others as JSON parse errors
+              if (
+                parseError instanceof Error &&
+                parseError.message.includes('Missing configurationResult')
+              ) {
+                throw parseError;
+              }
               throw new Error(
-                `Missing configurationResult for item: ${item.metadata?.name || 'unknown'}`,
+                `Invalid JSON in configurationResult for item: ${item.metadata?.name || 'unknown'}`,
               );
             }
-
-            const contentConfiguration = JSON.parse(
-              item.status.configurationResult,
-            ) as ContentConfiguration;
-
-            if (!contentConfiguration.url) {
-              contentConfiguration.url = item.spec.remoteConfiguration?.url;
-            }
-            return contentConfiguration;
-          } catch (parseError) {
-            // Log the error but don't fail the entire operation
-            console.error(
-              `Failed to parse configuration for item ${item.metadata?.name || 'unknown'}:`,
-              parseError,
-            );
-
-            // Re-throw specific errors as-is, others as JSON parse errors
-            if (
-              parseError instanceof Error &&
-              parseError.message.includes('Missing configurationResult')
-            ) {
-              throw parseError;
-            }
-            throw new Error(
-              `Invalid JSON in configurationResult for item: ${item.metadata?.name || 'unknown'}`,
-            );
-          }
-        });
+          });
 
       return {
         rawServiceProviders: [
