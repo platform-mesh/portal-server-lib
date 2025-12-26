@@ -1,4 +1,5 @@
 import { KcpKubernetesService } from '../services/kcp-k8s.service.js';
+import { processContentConfigurationForAccountHierarchy } from '../utils/account-hierarchy-resolver.js';
 import { welcomeNodeConfig } from './models/welcome-node-config.js';
 import { PromiseMiddlewareWrapper } from '@kubernetes/client-node/dist/gen/middleware.js';
 import { Injectable } from '@nestjs/common';
@@ -9,9 +10,7 @@ import {
 } from '@openmfp/portal-server-lib';
 
 @Injectable()
-export class KubernetesServiceProvidersService
-  implements ServiceProviderService
-{
+export class KubernetesServiceProvidersService implements ServiceProviderService {
   constructor(private kcpKubernetesService: KcpKubernetesService) {}
 
   async getServiceProviders(
@@ -64,6 +63,14 @@ export class KubernetesServiceProvidersService
         if (!contentConfiguration.url) {
           contentConfiguration.url = item.spec.remoteConfiguration?.url;
         }
+
+        if (context.accountPath) {
+          processContentConfigurationForAccountHierarchy(
+            contentConfiguration,
+            context.accountPath,
+          );
+        }
+
         return contentConfiguration;
       });
 
@@ -96,12 +103,15 @@ export class KubernetesServiceProvidersService
       middleware: [
         new PromiseMiddlewareWrapper({
           pre: async (context) => {
+            const accountPath =
+              requestContext?.accountPath ??
+              requestContext?.['core_platform-mesh_io_account'];
+
             const kcpUrl = this.kcpKubernetesService.getKcpVirtualWorkspaceUrl(
               requestContext.organization,
-              requestContext?.['core_platform-mesh_io_account'],
+              accountPath,
             );
             const path = `${kcpUrl}/apis/${gvr.group}/${gvr.version}/${gvr.plural}`;
-            console.log('kcp url: ', path);
 
             context.setUrl(path);
             context.setHeaderParam('Authorization', `Bearer ${token}`);

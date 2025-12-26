@@ -35,6 +35,7 @@ export class KcpKubernetesService {
     if (account) {
       path += `:${account}`; // FIXME: how are nested accounts and paths handled in the portal?
     }
+
     return path;
   }
 
