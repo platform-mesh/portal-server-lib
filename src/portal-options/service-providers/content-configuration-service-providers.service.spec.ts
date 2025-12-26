@@ -70,18 +70,20 @@ describe('ContentConfigurationServiceProvidersService', () => {
   it('returns parsed content configurations', async () => {
     mockClient.request.mockResolvedValue({
       ui_platform_mesh_io: {
-        ContentConfigurations: [
-          {
-            metadata: {
-              name: 'conf1',
-              labels: { 'ui.platform-mesh.io/entity': 'entity' },
+        ContentConfigurations: {
+          items: [
+            {
+              metadata: {
+                name: 'conf1',
+                labels: { 'ui.platform-mesh.io/entity': 'entity' },
+              },
+              spec: { remoteConfiguration: { url: 'http://remote' } },
+              status: {
+                configurationResult: JSON.stringify({ url: 'http://parsed' }),
+              },
             },
-            spec: { remoteConfiguration: { url: 'http://remote' } },
-            status: {
-              configurationResult: JSON.stringify({ url: 'http://parsed' }),
-            },
-          },
-        ],
+          ],
+        },
       },
     });
     const result = await service.getServiceProviders(
@@ -97,16 +99,18 @@ describe('ContentConfigurationServiceProvidersService', () => {
   it('falls back to spec.remoteConfiguration.url if missing in parsed config', async () => {
     mockClient.request.mockResolvedValue({
       ui_platform_mesh_io: {
-        ContentConfigurations: [
-          {
-            metadata: {
-              name: 'conf1',
-              labels: { 'ui.platform-mesh.io/entity': 'entity' },
+        ContentConfigurations: {
+          items: [
+            {
+              metadata: {
+                name: 'conf1',
+                labels: { 'ui.platform-mesh.io/entity': 'entity' },
+              },
+              spec: { remoteConfiguration: { url: 'http://remote' } },
+              status: { configurationResult: JSON.stringify({}) },
             },
-            spec: { remoteConfiguration: { url: 'http://remote' } },
-            status: { configurationResult: JSON.stringify({}) },
-          },
-        ],
+          ],
+        },
       },
     });
     const result = await service.getServiceProviders(
@@ -122,16 +126,18 @@ describe('ContentConfigurationServiceProvidersService', () => {
   it('throws on missing configurationResult', async () => {
     mockClient.request.mockResolvedValue({
       ui_platform_mesh_io: {
-        ContentConfigurations: [
-          {
-            metadata: {
-              name: 'conf1',
-              labels: { 'ui.platform-mesh.io/entity': 'entity' },
+        ContentConfigurations: {
+          items: [
+            {
+              metadata: {
+                name: 'conf1',
+                labels: { 'ui.platform-mesh.io/entity': 'entity' },
+              },
+              spec: { remoteConfiguration: { url: 'http://remote' } },
+              status: {},
             },
-            spec: { remoteConfiguration: { url: 'http://remote' } },
-            status: {},
-          },
-        ],
+          ],
+        },
       },
     });
     await expect(
@@ -153,5 +159,179 @@ describe('ContentConfigurationServiceProvidersService', () => {
     await expect(
       service.getServiceProviders('token', ['entity'], context),
     ).rejects.toThrow('Failed to fetch content configurations: network error');
+  });
+
+  it('applies processContentConfigurationForAccountHierarchy when accountPath is provided', async () => {
+    context.accountPath = 'acc1';
+    mockClient.request.mockResolvedValue({
+      ui_platform_mesh_io: {
+        ContentConfigurations: {
+          items: [
+            {
+              metadata: {
+                name: 'conf1',
+                labels: { 'ui.platform-mesh.io/entity': 'entity' },
+              },
+              spec: { remoteConfiguration: { url: 'http://remote' } },
+              status: {
+                configurationResult: JSON.stringify({
+                  name: 'test-config',
+                  luigiConfigFragment: {
+                    data: {
+                      nodes: [{ entityType: 'core_platform-mesh_io_account' }],
+                    },
+                  },
+                }),
+              },
+            },
+          ],
+        },
+      },
+    });
+
+    const result = await service.getServiceProviders(
+      'token',
+      ['entity'],
+      context,
+    );
+
+    expect(
+      result.rawServiceProviders[0].contentConfiguration[0].luigiConfigFragment
+        .data.nodes[0].entityType,
+    ).toBe('core_platform-mesh_io_account:1');
+  });
+
+  it('applies processContentConfigurationForAccountHierarchy with multi-level accountPath', async () => {
+    context.accountPath = 'acc1:acc2:acc3';
+    mockClient.request.mockResolvedValue({
+      ui_platform_mesh_io: {
+        ContentConfigurations: {
+          items: [
+            {
+              metadata: {
+                name: 'conf1',
+                labels: { 'ui.platform-mesh.io/entity': 'entity' },
+              },
+              spec: { remoteConfiguration: { url: 'http://remote' } },
+              status: {
+                configurationResult: JSON.stringify({
+                  name: 'test-config',
+                  luigiConfigFragment: {
+                    data: {
+                      nodes: [{ entityType: 'core_platform-mesh_io_account' }],
+                    },
+                  },
+                }),
+              },
+            },
+          ],
+        },
+      },
+    });
+
+    const result = await service.getServiceProviders(
+      'token',
+      ['entity'],
+      context,
+    );
+
+    expect(
+      result.rawServiceProviders[0].contentConfiguration[0].luigiConfigFragment
+        .data.nodes[0].entityType,
+    ).toBe(
+      'core_platform-mesh_io_account:1.core_platform-mesh_io_account:2.core_platform-mesh_io_account:3',
+    );
+  });
+
+  it('updates account children nodes for accounts configuration with accountPath', async () => {
+    context.accountPath = 'acc1';
+    mockClient.request.mockResolvedValue({
+      ui_platform_mesh_io: {
+        ContentConfigurations: {
+          items: [
+            {
+              metadata: {
+                name: 'accounts-config',
+                labels: { 'ui.platform-mesh.io/entity': 'entity' },
+              },
+              spec: { remoteConfiguration: { url: 'http://remote' } },
+              status: {
+                configurationResult: JSON.stringify({
+                  name: 'accounts',
+                  luigiConfigFragment: {
+                    data: {
+                      nodes: [
+                        {
+                          entityType: 'core_platform-mesh_io_account',
+                          children: [
+                            {
+                              defineEntity: { id: 'old-id' },
+                              context: {},
+                              pathSegment: 'old-path',
+                            },
+                          ],
+                        },
+                      ],
+                    },
+                  },
+                }),
+              },
+            },
+          ],
+        },
+      },
+    });
+
+    const result = await service.getServiceProviders(
+      'token',
+      ['entity'],
+      context,
+    );
+
+    const childNode =
+      result.rawServiceProviders[0].contentConfiguration[0].luigiConfigFragment
+        .data.nodes[0].children[0];
+
+    expect(childNode.defineEntity.id).toBe('core_platform-mesh_io_account:2');
+    expect(childNode.pathSegment).toBe(':core_platform-mesh_io_accountId:2');
+  });
+
+  it('does not apply processContentConfigurationForAccountHierarchy when accountPath is not provided', async () => {
+    mockClient.request.mockResolvedValue({
+      ui_platform_mesh_io: {
+        ContentConfigurations: {
+          items: [
+            {
+              metadata: {
+                name: 'conf1',
+                labels: { 'ui.platform-mesh.io/entity': 'entity' },
+              },
+              spec: { remoteConfiguration: { url: 'http://remote' } },
+              status: {
+                configurationResult: JSON.stringify({
+                  name: 'test-config',
+                  luigiConfigFragment: {
+                    data: {
+                      nodes: [{ entityType: 'core_platform-mesh_io_account' }],
+                    },
+                  },
+                }),
+              },
+            },
+          ],
+        },
+      },
+    });
+
+    const result = await service.getServiceProviders(
+      'token',
+      ['entity'],
+      context,
+    );
+
+    expect(
+      result.rawServiceProviders[0].contentConfiguration[0].luigiConfigFragment
+        .data.nodes[0].entityType,
+    ).toBe('core_platform-mesh_io_account');
   });
 });

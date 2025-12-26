@@ -194,4 +194,146 @@ describe('KubernetesServiceProvidersService', () => {
     errSpy.mockRestore();
     jest.useRealTimers();
   });
+
+  it('should apply processContentConfigurationForAccountHierarchy when accountPath is provided', async () => {
+    listClusterCustomObject.mockResolvedValue({
+      items: [
+        {
+          status: {
+            configurationResult: JSON.stringify({
+              name: 'test-config',
+              luigiConfigFragment: {
+                data: {
+                  nodes: [{ entityType: 'core_platform-mesh_io_account' }],
+                },
+              },
+            }),
+          },
+          spec: { remoteConfiguration: { url: 'http://example.com' } },
+        },
+      ],
+    });
+
+    const svc = new KubernetesServiceProvidersService(kcpKubernetesServiceMock);
+    const res = await svc.getServiceProviders('token', ['main'], {
+      organization: 'org',
+      isSubDomain: true,
+      accountPath: 'acc1',
+    });
+
+    expect(
+      res.rawServiceProviders[0].contentConfiguration[0].luigiConfigFragment
+        .data.nodes[0].entityType,
+    ).toBe('core_platform-mesh_io_account:1');
+  });
+
+  it('should apply processContentConfigurationForAccountHierarchy with multi-level accountPath', async () => {
+    listClusterCustomObject.mockResolvedValue({
+      items: [
+        {
+          status: {
+            configurationResult: JSON.stringify({
+              name: 'test-config',
+              luigiConfigFragment: {
+                data: {
+                  nodes: [{ entityType: 'core_platform-mesh_io_account' }],
+                },
+              },
+            }),
+          },
+          spec: { remoteConfiguration: { url: 'http://example.com' } },
+        },
+      ],
+    });
+
+    const svc = new KubernetesServiceProvidersService(kcpKubernetesServiceMock);
+    const res = await svc.getServiceProviders('token', ['main'], {
+      organization: 'org',
+      isSubDomain: true,
+      accountPath: 'acc1:acc2:acc3',
+    });
+
+    expect(
+      res.rawServiceProviders[0].contentConfiguration[0].luigiConfigFragment
+        .data.nodes[0].entityType,
+    ).toBe(
+      'core_platform-mesh_io_account:1.core_platform-mesh_io_account:2.core_platform-mesh_io_account:3',
+    );
+  });
+
+  it('should update account children nodes for accounts configuration with accountPath', async () => {
+    listClusterCustomObject.mockResolvedValue({
+      items: [
+        {
+          status: {
+            configurationResult: JSON.stringify({
+              name: 'accounts',
+              luigiConfigFragment: {
+                data: {
+                  nodes: [
+                    {
+                      entityType: 'core_platform-mesh_io_account',
+                      children: [
+                        {
+                          defineEntity: { id: 'old-id' },
+                          context: {},
+                          pathSegment: 'old-path',
+                        },
+                      ],
+                    },
+                  ],
+                },
+              },
+            }),
+          },
+          spec: { remoteConfiguration: { url: 'http://example.com' } },
+        },
+      ],
+    });
+
+    const svc = new KubernetesServiceProvidersService(kcpKubernetesServiceMock);
+    const res = await svc.getServiceProviders('token', ['main'], {
+      organization: 'org',
+      isSubDomain: true,
+      accountPath: 'acc1',
+    });
+
+    const childNode =
+      res.rawServiceProviders[0].contentConfiguration[0].luigiConfigFragment
+        .data.nodes[0].children[0];
+
+    expect(childNode.defineEntity.id).toBe('core_platform-mesh_io_account:2');
+    expect(childNode.pathSegment).toBe(':core_platform-mesh_io_accountId:2');
+  });
+
+  it('should not apply processContentConfigurationForAccountHierarchy when accountPath is not provided', async () => {
+    listClusterCustomObject.mockResolvedValue({
+      items: [
+        {
+          status: {
+            configurationResult: JSON.stringify({
+              name: 'test-config',
+              luigiConfigFragment: {
+                data: {
+                  nodes: [{ entityType: 'core_platform-mesh_io_account' }],
+                },
+              },
+            }),
+          },
+          spec: { remoteConfiguration: { url: 'http://example.com' } },
+        },
+      ],
+    });
+
+    const svc = new KubernetesServiceProvidersService(kcpKubernetesServiceMock);
+    const res = await svc.getServiceProviders('token', ['main'], {
+      organization: 'org',
+      isSubDomain: true,
+    });
+
+    expect(
+      res.rawServiceProviders[0].contentConfiguration[0].luigiConfigFragment
+        .data.nodes[0].entityType,
+    ).toBe('core_platform-mesh_io_account');
+  });
 });
