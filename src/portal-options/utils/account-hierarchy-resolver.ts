@@ -1,5 +1,8 @@
 import { ContentConfiguration } from '@openmfp/portal-server-lib';
 
+
+
+
 const ACCOUNT_ENTITY_TYPE = 'core_platform-mesh_io_account';
 
 export const updateEntityTypeFromAccountPath = (
@@ -30,8 +33,6 @@ export const updateAccountNodeChildren = (
   const nextHierarchyLevel = accountPath.split(':').length + 1;
 
   if (accountChildrenNode) {
-    accountChildrenNode.defineEntity.additionalContextKeys = ['accountPath']; //Todo move to cc
-
     accountChildrenNode.defineEntity.id = `${ACCOUNT_ENTITY_TYPE}:${nextHierarchyLevel}`;
     accountChildrenNode.context.accountId = `:${ACCOUNT_ENTITY_TYPE}Id:${nextHierarchyLevel}`;
     accountChildrenNode.context[`${ACCOUNT_ENTITY_TYPE}Id`] =

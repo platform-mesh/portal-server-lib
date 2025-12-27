@@ -129,9 +129,6 @@ describe('updateAccountNodeChildren', () => {
       .children?.[0] as any;
 
     expect(childNode.defineEntity.id).toBe('core_platform-mesh_io_account:2');
-    expect(childNode.defineEntity.additionalContextKeys).toEqual([
-      'accountPath',
-    ]);
     expect(childNode.context.accountId).toBe(
       ':core_platform-mesh_io_accountId:2',
     );
