@@ -100,5 +100,7 @@ export class KubernetesServiceProvidersService implements ServiceProviderService
         );
       }
     }
+
+    return {};
   }
 }
