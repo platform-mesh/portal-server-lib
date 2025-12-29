@@ -1,6 +1,6 @@
+import { K8sRequestContext, K8sResourceDescriptor } from '../models/k8s.js';
 import { KcpKubernetesService } from '../services/kcp-k8s.service.js';
 import { welcomeNodeConfig } from './models/welcome-node-config.js';
-import { PromiseMiddlewareWrapper } from '@kubernetes/client-node/dist/gen/middleware.js';
 import { Injectable } from '@nestjs/common';
 import {
   ContentConfiguration,
@@ -9,9 +9,7 @@ import {
 } from '@openmfp/portal-server-lib';
 
 @Injectable()
-export class KubernetesServiceProvidersService
-  implements ServiceProviderService
-{
+export class KubernetesServiceProvidersService implements ServiceProviderService {
   constructor(private kcpKubernetesService: KcpKubernetesService) {}
 
   async getServiceProviders(
@@ -32,20 +30,11 @@ export class KubernetesServiceProvidersService
       throw new Error('Context with organization is required');
     }
 
-    const entity = !entities || !entities.length ? 'main' : entities[0];
-
-    let response;
-    try {
-      response = await this.getKubernetesResources(entity, context, token);
-    } catch (error) {
-      console.error(error);
-
-      if (error.code == 429 || error.statusCode == 429) {
-        await new Promise((resolve) => setTimeout(resolve, 1000));
-        console.log('Retry after 1 second reading kubernetes resources.');
-        response = await this.getKubernetesResources(entity, context, token);
-      }
-    }
+    const response = await this.listContentConfigurationsForEntity(
+      token,
+      entities,
+      context as K8sRequestContext,
+    );
 
     if (!response.items) {
       return {
@@ -79,37 +68,37 @@ export class KubernetesServiceProvidersService
     };
   }
 
-  private async getKubernetesResources(
-    entity: string,
-    requestContext: Record<string, any>,
+  private async listContentConfigurationsForEntity(
     token: string,
+    entities: string[],
+    context: K8sRequestContext,
   ) {
-    const gvr = {
+    const entity = !entities || !entities.length ? 'main' : entities[0];
+    const gvr: K8sResourceDescriptor = {
       group: 'ui.platform-mesh.io',
       version: 'v1alpha1',
       plural: 'contentconfigurations',
       labelSelector: `ui.platform-mesh.io/entity=${entity}`,
     };
 
-    const k8sApi = this.kcpKubernetesService.getKcpK8sApiClient();
-    return await k8sApi.listClusterCustomObject(gvr, {
-      middleware: [
-        new PromiseMiddlewareWrapper({
-          pre: async (context) => {
-            const kcpUrl = this.kcpKubernetesService.getKcpVirtualWorkspaceUrl(
-              requestContext.organization,
-              requestContext?.['core_platform-mesh_io_account'],
-            );
-            const path = `${kcpUrl}/apis/${gvr.group}/${gvr.version}/${gvr.plural}`;
-            console.log('kcp url: ', path);
+    try {
+      return await this.kcpKubernetesService.listClusterCustomObjectInKcpVirtualWorkspace(
+        gvr,
+        context,
+        token,
+      );
+    } catch (error) {
+      console.error(error);
 
-            context.setUrl(path);
-            context.setHeaderParam('Authorization', `Bearer ${token}`);
-            return context;
-          },
-          post: async (context) => context,
-        }),
-      ],
-    });
+      if (error.code == 429 || error.statusCode == 429) {
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+        console.log('Retry after 1 second reading kubernetes resources.');
+        return await this.kcpKubernetesService.listClusterCustomObjectInKcpVirtualWorkspace(
+          gvr,
+          context,
+          token,
+        );
+      }
+    }
   }
 }

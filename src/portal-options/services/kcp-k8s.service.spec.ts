@@ -38,7 +38,7 @@ describe('KcpKubernetesService', () => {
 
   it('initializes k8s client and baseUrl from kubeconfig', () => {
     const svc = new KcpKubernetesService();
-    expect(svc.getKcpK8sApiClient()).toBeDefined();
+    expect(svc.getKcpK8sCustomObjectsApiOIDCUser()).toBeDefined();
     expect(svc.getKcpWorkspaceUrl('org1', 'acc1').toString()).toBe(
       'https://kcp.example.com/clusters/root:orgs:org1:acc1',
     );

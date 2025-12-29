@@ -44,7 +44,7 @@ describe('KubernetesServiceProvidersService', () => {
     kcpKubernetesServiceMock.getKcpWorkspaceUrl.mockReturnValue(
       new URL('https://k8s.example.com/clusters/root:orgs:test-org'),
     );
-    kcpKubernetesServiceMock.getKcpK8sApiClient.mockReturnValue({
+    kcpKubernetesServiceMock.getKcpK8sCustomObjectsApiOIDCUser.mockReturnValue({
       listClusterCustomObject,
     } as any);
   });
