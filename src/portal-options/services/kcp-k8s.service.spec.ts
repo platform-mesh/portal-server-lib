@@ -24,6 +24,10 @@ jest.mock('../utils/domain.js', () => ({
   getOrganization: jest.fn(() => 'org-1'),
 }));
 
+jest.mock('@kubernetes/client-node/dist/gen/middleware.js', () => ({
+  PromiseMiddlewareWrapper: class {},
+}));
+
 describe('KcpKubernetesService', () => {
   const OLD_ENV = process.env;
 

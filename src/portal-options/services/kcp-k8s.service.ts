@@ -6,11 +6,13 @@ import {
   KubeConfig,
 } from '@kubernetes/client-node';
 import { PromiseMiddlewareWrapper } from '@kubernetes/client-node/dist/gen/middleware.js';
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import type { Request } from 'express';
 
 @Injectable()
 export class KcpKubernetesService {
+  private logger: Logger = new Logger(KcpKubernetesService.name);
+
   private readonly kubeConfigKcp = process.env.KUBECONFIG_KCP;
   private k8sCustomObjectsApiOIDCUser: CustomObjectsApi;
   private k8sCustomObjectsApi: CustomObjectsApi;
@@ -124,7 +126,7 @@ export class KcpKubernetesService {
               requestContext?.['core_platform-mesh_io_account'],
             );
             const path = `${kcpUrl}/apis/${gvr.group}/${gvr.version}/${gvr.plural}/${gvr.name}`;
-            console.log('kcp url: ', path);
+            this.logger.log(`kcp url: ${path}`);
             context.setUrl(path);
             return context;
           },
@@ -148,7 +150,7 @@ export class KcpKubernetesService {
               requestContext?.['core_platform-mesh_io_account'],
             );
             const path = `${kcpUrl}/apis/${gvr.group}/${gvr.version}/${gvr.plural}`;
-            console.log('kcp url: ', path);
+            this.logger.log(`kcp url: ${path}`);
 
             context.setUrl(path);
             context.setHeaderParam('Authorization', `Bearer ${token}`);
@@ -176,7 +178,7 @@ export class KcpKubernetesService {
               pre: async (context) => {
                 const kcpUrl = this.getKcpWorkspaceUrl();
                 const path = `${kcpUrl}/api/v1/namespaces/${namespace}/secrets/${secretName}`;
-                console.log('kcp url: ', path);
+                this.logger.log(`kcp url: ${path}`);
                 context.setUrl(path);
                 return context;
               },
@@ -190,8 +192,9 @@ export class KcpKubernetesService {
         'utf-8',
       );
     } catch (err) {
-      console.error(
-        `Failed to fetch secret ${secretName}:`,
+      this.logger.error(
+        `Failed to fetch secret %s:`,
+        secretName,
         err.response?.body || err,
       );
       throw err;
