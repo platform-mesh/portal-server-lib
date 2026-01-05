@@ -3,7 +3,7 @@ export interface ContentConfigurationQueryResponse {
 }
 
 export interface ContentConfigurationsResponse {
-    ContentConfigurations: ContentConfigurationResponse[];
+  ContentConfigurations: { items: ContentConfigurationResponse[] };
 }
 
 export interface ContentConfigurationResponse {

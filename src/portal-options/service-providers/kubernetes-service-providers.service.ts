@@ -1,5 +1,6 @@
 import { K8sRequestContext, K8sResourceDescriptor } from '../models/k8s.js';
 import { KcpKubernetesService } from '../services/kcp-k8s.service.js';
+import { processContentConfigurationForAccountHierarchy } from '../utils/account-hierarchy-resolver.js';
 import { welcomeNodeConfig } from './models/welcome-node-config.js';
 import { Injectable } from '@nestjs/common';
 import {
@@ -53,6 +54,14 @@ export class KubernetesServiceProvidersService implements ServiceProviderService
         if (!contentConfiguration.url) {
           contentConfiguration.url = item.spec.remoteConfiguration?.url;
         }
+
+        if (context.accountPath) {
+          processContentConfigurationForAccountHierarchy(
+            contentConfiguration,
+            context.accountPath,
+          );
+        }
+
         return contentConfiguration;
       });
 

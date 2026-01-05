@@ -1,9 +1,10 @@
 import { gql } from 'graphql-request';
 
 export const contentConfigurationsQuery = gql`
-  query {
-    ui_platform_mesh_io {
-      ContentConfigurations {
+query {
+  ui_platform_mesh_io {
+    ContentConfigurations {
+      items {
         metadata {
           name
           labels
@@ -19,4 +20,5 @@ export const contentConfigurationsQuery = gql`
       }
     }
   }
+}
 `;
