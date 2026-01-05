@@ -122,9 +122,13 @@ export class KcpKubernetesService {
       middleware: [
         new PromiseMiddlewareWrapper({
           pre: async (context) => {
+            const accountPath =
+              requestContext?.accountPath ??
+              requestContext?.['core_platform-mesh_io_account'];
+
             const kcpUrl = this.getKcpWorkspaceUrl(
               requestContext.organization,
-              requestContext?.['core_platform-mesh_io_account'],
+              accountPath,
             );
             const path = `${kcpUrl}/apis/${gvr.group}/${gvr.version}/${gvr.plural}/${gvr.name}`;
             this.logger.log(`kcp url: ${path}`);
@@ -146,9 +150,13 @@ export class KcpKubernetesService {
       middleware: [
         new PromiseMiddlewareWrapper({
           pre: async (context) => {
+            const accountPath =
+              requestContext?.accountPath ??
+              requestContext?.['core_platform-mesh_io_account'];
+
             const kcpUrl = this.getKcpVirtualWorkspaceUrl(
               requestContext.organization,
-              requestContext?.['core_platform-mesh_io_account'],
+              accountPath,
             );
             const path = `${kcpUrl}/apis/${gvr.group}/${gvr.version}/${gvr.plural}`;
             this.logger.log(`kcp url: ${path}`);
