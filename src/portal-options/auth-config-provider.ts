@@ -1,3 +1,8 @@
+import {
+  IdentityProviderConfiguration,
+  K8sResourceDescriptor,
+} from './models/k8s.js';
+import { KcpKubernetesService } from './services/kcp-k8s.service.js';
 import { getDiscoveryEndpoint, getOrganization } from './utils/domain.js';
 import { CoreV1Api, KubeConfig } from '@kubernetes/client-node';
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
@@ -10,20 +15,23 @@ import type { Request } from 'express';
 
 @Injectable()
 export class PMAuthConfigProvider implements AuthConfigService {
-  private k8sApi: CoreV1Api;
-
-  constructor(private discoveryService: DiscoveryService) {
-    const kc = new KubeConfig();
-    kc.loadFromDefault();
-    this.k8sApi = kc.makeApiClient(CoreV1Api);
-  }
+  constructor(
+    private discoveryService: DiscoveryService,
+    private kcpKubernetesService: KcpKubernetesService,
+  ) {}
 
   async getAuthConfig(request: Request): Promise<ServerAuthVariables> {
     const oidcUrl = getDiscoveryEndpoint(request);
-    const clientId = getOrganization(request);
+    const org = getOrganization(request);
+
+    const clientId =
+      org === 'welcome' ? 'welcome' : await this.readClientId(org);
+    const clientSecret =
+      org === 'welcome'
+        ? await this.getWelcomeClientSecret(org)
+        : await this.kcpKubernetesService.getClientSecret(org);
 
     const baseDomain = process.env['BASE_DOMAINS_DEFAULT'];
-    const clientSecret = await this.getClientSecret(clientId);
     const oidc = await this.discoveryService.getOIDC(oidcUrl);
     const oauthServerUrl =
       oidc?.authorization_endpoint ?? process.env['AUTH_SERVER_URL_DEFAULT'];
@@ -56,12 +64,33 @@ export class PMAuthConfigProvider implements AuthConfigService {
     };
   }
 
-  private async getClientSecret(orgName: string) {
+  private async readClientId(orgName: string): Promise<string> {
+    const k8sResourceDescriptor: K8sResourceDescriptor = {
+      group: 'core.platform-mesh.io',
+      version: 'v1alpha1',
+      plural: 'identityproviderconfigurations',
+      name: orgName,
+    };
+
+    const result: IdentityProviderConfiguration =
+      await this.kcpKubernetesService.listClusterCustomObject(
+        k8sResourceDescriptor,
+        {
+          organization: orgName,
+        },
+      );
+    return result.status.managedClients[orgName].clientId;
+  }
+
+  private async getWelcomeClientSecret(orgName: string) {
     const secretName = `portal-client-secret-${orgName}`;
     const namespace = 'platform-mesh-system';
 
+    const kc = new KubeConfig();
+    kc.loadFromDefault();
+    const k8sApi = kc.makeApiClient(CoreV1Api);
     try {
-      const res = await this.k8sApi.readNamespacedSecret({
+      const res = await k8sApi.readNamespacedSecret({
         namespace,
         name: secretName,
       });

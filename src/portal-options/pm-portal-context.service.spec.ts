@@ -27,6 +27,10 @@ jest.mock('./utils/domain.js', () => ({
   getOrganization: jest.fn(),
 }));
 
+jest.mock('@kubernetes/client-node/dist/gen/middleware.js', () => ({
+  PromiseMiddlewareWrapper: class {},
+}));
+
 describe('PMPortalContextService', () => {
   let service: PMPortalContextService;
   let kcpKubernetesServiceMock: jest.Mocked<KcpKubernetesService>;

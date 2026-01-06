@@ -1,6 +1,9 @@
+import { K8sRequestContext, K8sResourceDescriptor } from '../models/k8s.js';
 import { KcpKubernetesService } from '../services/kcp-k8s.service.js';
 import { KubernetesServiceProvidersService } from './kubernetes-service-providers.service.js';
 import { welcomeNodeConfig } from './models/welcome-node-config.js';
+import { Test, TestingModule } from '@nestjs/testing';
+import { ContentConfiguration } from '@openmfp/portal-server-lib';
 import { mock } from 'jest-mock-extended';
 
 const listClusterCustomObject = jest.fn();
@@ -25,194 +28,482 @@ jest.mock('@kubernetes/client-node', () => {
 });
 
 jest.mock('@kubernetes/client-node/dist/gen/middleware.js', () => ({
-  PromiseMiddlewareWrapper: class {
-    pre?: (ctx: any) => Promise<any> | any;
-    post?: (ctx: any) => Promise<any> | any;
-    constructor(opts: any) {
-      this.pre = opts.pre;
-      this.post = opts.post;
-    }
-  },
+  PromiseMiddlewareWrapper: class {},
 }));
 
 describe('KubernetesServiceProvidersService', () => {
+  let service: KubernetesServiceProvidersService;
   let kcpKubernetesServiceMock: jest.Mocked<KcpKubernetesService>;
 
-  beforeEach(() => {
-    jest.resetAllMocks();
-    kcpKubernetesServiceMock = mock();
-    kcpKubernetesServiceMock.getKcpWorkspaceUrl.mockReturnValue(
-      new URL('https://k8s.example.com/clusters/root:orgs:test-org'),
+  const mockToken = 'test-token-123';
+  const mockEntities = ['test-entity'];
+  const mockContext: K8sRequestContext = {
+    organization: 'test-org',
+    isSubDomain: true,
+  } as K8sRequestContext;
+
+  beforeEach(async () => {
+    kcpKubernetesServiceMock = mock<KcpKubernetesService>();
+
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [
+        KubernetesServiceProvidersService,
+        {
+          provide: KcpKubernetesService,
+          useValue: kcpKubernetesServiceMock,
+        },
+      ],
+    }).compile();
+
+    service = module.get<KubernetesServiceProvidersService>(
+      KubernetesServiceProvidersService,
     );
-    kcpKubernetesServiceMock.getKcpK8sApiClient.mockReturnValue({
-      listClusterCustomObject,
-    } as any);
   });
 
-  it('throws if token is missing', async () => {
-    const svc = new KubernetesServiceProvidersService(kcpKubernetesServiceMock);
-    await expect(
-      svc.getServiceProviders('', ['entity'], {
-        token: undefined,
-      }),
-    ).rejects.toThrow('Token is required');
-  });
-
-  it('throws if context organization is missing', async () => {
-    const svc = new KubernetesServiceProvidersService(kcpKubernetesServiceMock);
-    await expect(
-      svc.getServiceProviders('token', ['entity'], {
-        token: 'token',
-        organization: undefined,
-        isSubDomain: true,
-      }),
-    ).rejects.toThrow('Context with organization is required');
-  });
-
-  it('returns welcome node config when on the base domain', async () => {
-    const svc = new KubernetesServiceProvidersService(kcpKubernetesServiceMock);
-    const result = await svc.getServiceProviders('token', ['entity'], {
-      organization: undefined,
-      isSubDomain: false,
+  describe('getServiceProviders', () => {
+    it('should throw error when token is missing', async () => {
+      await expect(
+        service.getServiceProviders('', mockEntities, mockContext),
+      ).rejects.toThrow('Token is required');
     });
 
-    expect(result).toEqual(welcomeNodeConfig);
-  });
-
-  it('should return empty list when API returns no items', async () => {
-    listClusterCustomObject.mockImplementation(
-      async (_gvr: any, _opts: any) => {
-        return {};
-      },
-    );
-
-    const svc = new KubernetesServiceProvidersService(kcpKubernetesServiceMock);
-    const res = await svc.getServiceProviders('token', [], {
-      organization: 'org',
-      isSubDomain: true,
+    it('should throw error when token is null', async () => {
+      await expect(
+        service.getServiceProviders(null as any, mockEntities, mockContext),
+      ).rejects.toThrow('Token is required');
     });
-    expect(res.rawServiceProviders).toEqual([]);
-  });
 
-  it('should map items to contentConfiguration and fill url from spec when missing', async () => {
-    let capturedUrl = '';
-    const ctx = {
-      _url: 'https://k8s.example.com/base',
-      getUrl() {
-        return this._url;
-      },
-      setUrl(u: string) {
-        this._url = u;
-      },
-      setHeaderParam: jest.fn(),
-    };
-    listClusterCustomObject.mockImplementation(async (_gvr: any, opts: any) => {
-      const mw = opts?.middleware?.[0];
-      if (mw?.pre) await mw.pre(ctx);
-      capturedUrl = ctx._url;
-      return {
+    it('should return welcome node config when not subdomain', async () => {
+      const context = { ...mockContext, isSubDomain: false };
+
+      const result = await service.getServiceProviders(
+        mockToken,
+        mockEntities,
+        context,
+      );
+
+      expect(result).toEqual(welcomeNodeConfig);
+      expect(
+        kcpKubernetesServiceMock.listClusterCustomObjectInKcpVirtualWorkspace,
+      ).not.toHaveBeenCalled();
+    });
+
+    it('should throw error when organization is null', async () => {
+      const context = { isSubDomain: true, organization: null } as any;
+
+      await expect(
+        service.getServiceProviders(mockToken, mockEntities, context),
+      ).rejects.toThrow('Context with organization is required');
+    });
+
+    it('should return empty array when no items in response', async () => {
+      kcpKubernetesServiceMock.listClusterCustomObjectInKcpVirtualWorkspace.mockResolvedValue(
+        {
+          items: null,
+        } as any,
+      );
+
+      const result = await service.getServiceProviders(
+        mockToken,
+        mockEntities,
+        mockContext,
+      );
+
+      expect(result).toEqual({ rawServiceProviders: [] });
+    });
+
+    it('should return empty array when items is undefined', async () => {
+      kcpKubernetesServiceMock.listClusterCustomObjectInKcpVirtualWorkspace.mockResolvedValue(
+        {} as any,
+      );
+
+      const result = await service.getServiceProviders(
+        mockToken,
+        mockEntities,
+        mockContext,
+      );
+
+      expect(result).toEqual({ rawServiceProviders: [] });
+    });
+
+    it('should parse and return content configurations', async () => {
+      const mockContentConfig: ContentConfiguration = {
+        url: 'https://test.com/config',
+        name: 'Test Config',
+      } as ContentConfiguration;
+
+      const mockResponse = {
         items: [
           {
-            status: { configurationResult: JSON.stringify({}) },
+            status: {
+              configurationResult: JSON.stringify(mockContentConfig),
+            },
             spec: {
-              remoteConfiguration: { url: 'http://fallback.example/app' },
+              remoteConfiguration: {
+                url: 'https://fallback.com',
+              },
             },
           },
         ],
       };
-    });
-    kcpKubernetesServiceMock.getKcpVirtualWorkspaceUrl.mockReturnValue(
-      new URL(
-        'https://k8s.example.com/services/contentconfigurations/clusters/root:orgs:acme:a1',
-      ),
-    );
 
-    const svc = new KubernetesServiceProvidersService(kcpKubernetesServiceMock);
-    const res = await svc.getServiceProviders('token', ['main'], {
-      organization: 'acme',
-      isSubDomain: true,
-      'core_platform-mesh_io_account': 'a1',
-    });
+      kcpKubernetesServiceMock.listClusterCustomObjectInKcpVirtualWorkspace.mockResolvedValue(
+        mockResponse as any,
+      );
 
-    expect(res.rawServiceProviders[0].contentConfiguration).toHaveLength(1);
-    expect(res.rawServiceProviders[0].contentConfiguration[0].url).toBe(
-      'http://fallback.example/app',
-    );
+      const result = await service.getServiceProviders(
+        mockToken,
+        mockEntities,
+        mockContext,
+      );
 
-    expect(capturedUrl).toEqual(
-      'https://k8s.example.com/services/contentconfigurations/clusters/root:orgs:acme:a1/apis/ui.platform-mesh.io/v1alpha1/contentconfigurations',
-    );
-    expect(ctx.setHeaderParam).toHaveBeenCalledWith(
-      'Authorization',
-      `Bearer token`,
-    );
-  });
-
-  it('should retry once on HTTP 429 and log retry message', async () => {
-    jest.useFakeTimers();
-    const sequence: any[] = [
-      Object.assign(new Error('Too Many Requests'), { code: 429 }),
-      { items: [] },
-    ];
-    listClusterCustomObject.mockImplementation(async () => {
-      const next = sequence.shift();
-      if (next instanceof Error || next?.code === 429) {
-        throw next;
-      }
-      return next;
+      expect(result.rawServiceProviders).toHaveLength(1);
+      expect(result.rawServiceProviders[0].name).toBe('platform-mesh-system');
+      expect(result.rawServiceProviders[0].contentConfiguration).toHaveLength(
+        1,
+      );
+      expect(result.rawServiceProviders[0].contentConfiguration[0].url).toBe(
+        'https://test.com/config',
+      );
     });
 
-    const logSpy = jest
-      .spyOn(console, 'log')
-      .mockImplementation(() => undefined as unknown as never);
-    const errSpy = jest
-      .spyOn(console, 'error')
-      .mockImplementation(() => undefined as unknown as never);
+    it('should use fallback url when content configuration has no url', async () => {
+      const mockContentConfig: ContentConfiguration = {
+        name: 'Test Config',
+      } as ContentConfiguration;
 
-    const svc = new KubernetesServiceProvidersService(kcpKubernetesServiceMock);
-    const promise = svc.getServiceProviders('token', [], {
-      organization: 'org',
-      isSubDomain: true,
+      const mockResponse = {
+        items: [
+          {
+            status: {
+              configurationResult: JSON.stringify(mockContentConfig),
+            },
+            spec: {
+              remoteConfiguration: {
+                url: 'https://fallback.com',
+              },
+            },
+          },
+        ],
+      };
+
+      kcpKubernetesServiceMock.listClusterCustomObjectInKcpVirtualWorkspace.mockResolvedValue(
+        mockResponse as any,
+      );
+
+      const result = await service.getServiceProviders(
+        mockToken,
+        mockEntities,
+        mockContext,
+      );
+
+      expect(result.rawServiceProviders[0].contentConfiguration[0].url).toBe(
+        'https://fallback.com',
+      );
     });
 
-    await jest.advanceTimersByTimeAsync(1000);
+    it('should filter out items without configurationResult', async () => {
+      const mockContentConfig: ContentConfiguration = {
+        url: 'https://test.com/config',
+      } as ContentConfiguration;
 
-    const res = await promise;
-    expect(res.rawServiceProviders).toEqual([
-      {
-        name: 'platform-mesh-system',
-        displayName: '',
-        creationTimestamp: '',
-        contentConfiguration: [],
-      },
-    ]);
-    expect(logSpy).toHaveBeenCalledWith(
-      'Retry after 1 second reading kubernetes resources.',
-    );
+      const mockResponse = {
+        items: [
+          {
+            status: {
+              configurationResult: JSON.stringify(mockContentConfig),
+            },
+            spec: {},
+          },
+          {
+            status: {
+              configurationResult: null,
+            },
+            spec: {},
+          },
+          {
+            status: {},
+            spec: {},
+          },
+        ],
+      };
 
-    logSpy.mockRestore();
-    errSpy.mockRestore();
-    jest.useRealTimers();
+      kcpKubernetesServiceMock.listClusterCustomObjectInKcpVirtualWorkspace.mockResolvedValue(
+        mockResponse as any,
+      );
+
+      const result = await service.getServiceProviders(
+        mockToken,
+        mockEntities,
+        mockContext,
+      );
+
+      expect(result.rawServiceProviders[0].contentConfiguration).toHaveLength(
+        1,
+      );
+    });
+
+    it('should handle multiple content configurations', async () => {
+      const mockConfig1: ContentConfiguration = {
+        url: 'https://test1.com',
+      } as ContentConfiguration;
+      const mockConfig2: ContentConfiguration = {
+        url: 'https://test2.com',
+      } as ContentConfiguration;
+
+      const mockResponse = {
+        items: [
+          {
+            status: {
+              configurationResult: JSON.stringify(mockConfig1),
+            },
+            spec: {},
+          },
+          {
+            status: {
+              configurationResult: JSON.stringify(mockConfig2),
+            },
+            spec: {},
+          },
+        ],
+      };
+
+      kcpKubernetesServiceMock.listClusterCustomObjectInKcpVirtualWorkspace.mockResolvedValue(
+        mockResponse as any,
+      );
+
+      const result = await service.getServiceProviders(
+        mockToken,
+        mockEntities,
+        mockContext,
+      );
+
+      expect(result.rawServiceProviders[0].contentConfiguration).toHaveLength(
+        2,
+      );
+      expect(result.rawServiceProviders[0].contentConfiguration[0].url).toBe(
+        'https://test1.com',
+      );
+      expect(result.rawServiceProviders[0].contentConfiguration[1].url).toBe(
+        'https://test2.com',
+      );
+    });
+
+    it('should use main entity when entities array is empty', async () => {
+      const mockResponse = { items: [] };
+      kcpKubernetesServiceMock.listClusterCustomObjectInKcpVirtualWorkspace.mockResolvedValue(
+        mockResponse as any,
+      );
+
+      await service.getServiceProviders(mockToken, [], mockContext);
+
+      expect(
+        kcpKubernetesServiceMock.listClusterCustomObjectInKcpVirtualWorkspace,
+      ).toHaveBeenCalledWith(
+        expect.objectContaining({
+          labelSelector: 'ui.platform-mesh.io/entity=main',
+        }),
+        mockContext,
+        mockToken,
+      );
+    });
+
+    it('should use main entity when entities is null', async () => {
+      const mockResponse = { items: [] };
+      kcpKubernetesServiceMock.listClusterCustomObjectInKcpVirtualWorkspace.mockResolvedValue(
+        mockResponse as any,
+      );
+
+      await service.getServiceProviders(mockToken, null as any, mockContext);
+
+      expect(
+        kcpKubernetesServiceMock.listClusterCustomObjectInKcpVirtualWorkspace,
+      ).toHaveBeenCalledWith(
+        expect.objectContaining({
+          labelSelector: 'ui.platform-mesh.io/entity=main',
+        }),
+        mockContext,
+        mockToken,
+      );
+    });
+
+    it('should use first entity from array', async () => {
+      const mockResponse = { items: [] };
+      kcpKubernetesServiceMock.listClusterCustomObjectInKcpVirtualWorkspace.mockResolvedValue(
+        mockResponse as any,
+      );
+
+      await service.getServiceProviders(
+        mockToken,
+        ['entity1', 'entity2'],
+        mockContext,
+      );
+
+      expect(
+        kcpKubernetesServiceMock.listClusterCustomObjectInKcpVirtualWorkspace,
+      ).toHaveBeenCalledWith(
+        expect.objectContaining({
+          labelSelector: 'ui.platform-mesh.io/entity=entity1',
+        }),
+        mockContext,
+        mockToken,
+      );
+    });
+
+    it('should call kubernetes service with correct GVR', async () => {
+      const mockResponse = { items: [] };
+      kcpKubernetesServiceMock.listClusterCustomObjectInKcpVirtualWorkspace.mockResolvedValue(
+        mockResponse as any,
+      );
+
+      await service.getServiceProviders(mockToken, mockEntities, mockContext);
+
+      const expectedGvr: K8sResourceDescriptor = {
+        group: 'ui.platform-mesh.io',
+        version: 'v1alpha1',
+        plural: 'contentconfigurations',
+        labelSelector: 'ui.platform-mesh.io/entity=test-entity',
+      };
+
+      expect(
+        kcpKubernetesServiceMock.listClusterCustomObjectInKcpVirtualWorkspace,
+      ).toHaveBeenCalledWith(expectedGvr, mockContext, mockToken);
+    });
+
+    it('should retry once on 429 error', async () => {
+      const error = { code: 429 };
+      const mockResponse = { items: [] };
+
+      kcpKubernetesServiceMock.listClusterCustomObjectInKcpVirtualWorkspace
+        .mockRejectedValueOnce(error)
+        .mockResolvedValueOnce(mockResponse as any);
+
+      jest.spyOn(console, 'error').mockImplementation();
+      jest.spyOn(console, 'log').mockImplementation();
+      jest.spyOn(global, 'setTimeout');
+
+      await service.getServiceProviders(mockToken, mockEntities, mockContext);
+
+      expect(
+        kcpKubernetesServiceMock.listClusterCustomObjectInKcpVirtualWorkspace,
+      ).toHaveBeenCalledTimes(2);
+      expect(setTimeout).toHaveBeenCalledWith(expect.any(Function), 1000);
+
+      jest.restoreAllMocks();
+    });
+
+    it('should retry once on statusCode 429 error', async () => {
+      const error = { statusCode: 429 };
+      const mockResponse = { items: [] };
+
+      kcpKubernetesServiceMock.listClusterCustomObjectInKcpVirtualWorkspace
+        .mockRejectedValueOnce(error)
+        .mockResolvedValueOnce(mockResponse as any);
+
+      jest.spyOn(console, 'error').mockImplementation();
+      jest.spyOn(console, 'log').mockImplementation();
+
+      await service.getServiceProviders(mockToken, mockEntities, mockContext);
+
+      expect(
+        kcpKubernetesServiceMock.listClusterCustomObjectInKcpVirtualWorkspace,
+      ).toHaveBeenCalledTimes(2);
+
+      jest.restoreAllMocks();
+    });
+
+    it('should log error on kubernetes service failure', async () => {
+      const error = new Error('Kubernetes error');
+      kcpKubernetesServiceMock.listClusterCustomObjectInKcpVirtualWorkspace.mockRejectedValue(
+        error,
+      );
+
+      const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
+
+      await service.getServiceProviders(mockToken, mockEntities, mockContext);
+
+      expect(consoleSpy).toHaveBeenCalledWith(error);
+
+      consoleSpy.mockRestore();
+    });
+
+    it('should not retry on non-429 errors', async () => {
+      const error = { code: 500 };
+      kcpKubernetesServiceMock.listClusterCustomObjectInKcpVirtualWorkspace.mockRejectedValue(
+        error,
+      );
+
+      jest.spyOn(console, 'error').mockImplementation();
+
+      await service.getServiceProviders(mockToken, mockEntities, mockContext);
+
+      expect(
+        kcpKubernetesServiceMock.listClusterCustomObjectInKcpVirtualWorkspace,
+      ).toHaveBeenCalledTimes(1);
+
+      jest.restoreAllMocks();
+    });
+
+    it('should return result after successful retry', async () => {
+      const error = { code: 429 };
+      const mockContentConfig: ContentConfiguration = {
+        url: 'https://test.com',
+      } as ContentConfiguration;
+      const mockResponse = {
+        items: [
+          {
+            status: {
+              configurationResult: JSON.stringify(mockContentConfig),
+            },
+            spec: {},
+          },
+        ],
+      };
+
+      kcpKubernetesServiceMock.listClusterCustomObjectInKcpVirtualWorkspace
+        .mockRejectedValueOnce(error)
+        .mockResolvedValueOnce(mockResponse as any);
+
+      jest.spyOn(console, 'error').mockImplementation();
+      jest.spyOn(console, 'log').mockImplementation();
+
+      const result = await service.getServiceProviders(
+        mockToken,
+        mockEntities,
+        mockContext,
+      );
+
+      expect(result.rawServiceProviders[0].contentConfiguration).toHaveLength(
+        1,
+      );
+      expect(result.rawServiceProviders[0].contentConfiguration[0].url).toBe(
+        'https://test.com',
+      );
+
+      jest.restoreAllMocks();
+    });
   });
 
   it('should apply processContentConfigurationForAccountHierarchy when accountPath is provided', async () => {
-    listClusterCustomObject.mockResolvedValue({
-      items: [
-        {
-          status: {
-            configurationResult: JSON.stringify({
-              name: 'test-config',
-              luigiConfigFragment: {
-                data: {
-                  nodes: [{ entityType: 'core_platform-mesh_io_account' }],
+    kcpKubernetesServiceMock.listClusterCustomObjectInKcpVirtualWorkspace.mockResolvedValue(
+      {
+        items: [
+          {
+            status: {
+              configurationResult: JSON.stringify({
+                name: 'test-config',
+                luigiConfigFragment: {
+                  data: {
+                    nodes: [{ entityType: 'core_platform-mesh_io_account' }],
+                  },
                 },
-              },
-            }),
+              }),
+            },
+            spec: { remoteConfiguration: { url: 'http://example.com' } },
           },
-          spec: { remoteConfiguration: { url: 'http://example.com' } },
-        },
-      ],
-    });
+        ],
+      },
+    );
 
     const svc = new KubernetesServiceProvidersService(kcpKubernetesServiceMock);
     const res = await svc.getServiceProviders('token', ['main'], {
@@ -228,23 +519,25 @@ describe('KubernetesServiceProvidersService', () => {
   });
 
   it('should apply processContentConfigurationForAccountHierarchy with multi-level accountPath', async () => {
-    listClusterCustomObject.mockResolvedValue({
-      items: [
-        {
-          status: {
-            configurationResult: JSON.stringify({
-              name: 'test-config',
-              luigiConfigFragment: {
-                data: {
-                  nodes: [{ entityType: 'core_platform-mesh_io_account' }],
+    kcpKubernetesServiceMock.listClusterCustomObjectInKcpVirtualWorkspace.mockResolvedValue(
+      {
+        items: [
+          {
+            status: {
+              configurationResult: JSON.stringify({
+                name: 'test-config',
+                luigiConfigFragment: {
+                  data: {
+                    nodes: [{ entityType: 'core_platform-mesh_io_account' }],
+                  },
                 },
-              },
-            }),
+              }),
+            },
+            spec: { remoteConfiguration: { url: 'http://example.com' } },
           },
-          spec: { remoteConfiguration: { url: 'http://example.com' } },
-        },
-      ],
-    });
+        ],
+      },
+    );
 
     const svc = new KubernetesServiceProvidersService(kcpKubernetesServiceMock);
     const res = await svc.getServiceProviders('token', ['main'], {
@@ -262,34 +555,36 @@ describe('KubernetesServiceProvidersService', () => {
   });
 
   it('should update account children nodes for accounts configuration with accountPath', async () => {
-    listClusterCustomObject.mockResolvedValue({
-      items: [
-        {
-          status: {
-            configurationResult: JSON.stringify({
-              name: 'accounts',
-              luigiConfigFragment: {
-                data: {
-                  nodes: [
-                    {
-                      entityType: 'core_platform-mesh_io_account',
-                      children: [
-                        {
-                          defineEntity: { id: 'old-id' },
-                          context: {},
-                          pathSegment: 'old-path',
-                        },
-                      ],
-                    },
-                  ],
+    kcpKubernetesServiceMock.listClusterCustomObjectInKcpVirtualWorkspace.mockResolvedValue(
+      {
+        items: [
+          {
+            status: {
+              configurationResult: JSON.stringify({
+                name: 'accounts',
+                luigiConfigFragment: {
+                  data: {
+                    nodes: [
+                      {
+                        entityType: 'core_platform-mesh_io_account',
+                        children: [
+                          {
+                            defineEntity: { id: 'old-id' },
+                            context: {},
+                            pathSegment: 'old-path',
+                          },
+                        ],
+                      },
+                    ],
+                  },
                 },
-              },
-            }),
+              }),
+            },
+            spec: { remoteConfiguration: { url: 'http://example.com' } },
           },
-          spec: { remoteConfiguration: { url: 'http://example.com' } },
-        },
-      ],
-    });
+        ],
+      },
+    );
 
     const svc = new KubernetesServiceProvidersService(kcpKubernetesServiceMock);
     const res = await svc.getServiceProviders('token', ['main'], {
@@ -307,23 +602,25 @@ describe('KubernetesServiceProvidersService', () => {
   });
 
   it('should not apply processContentConfigurationForAccountHierarchy when accountPath is not provided', async () => {
-    listClusterCustomObject.mockResolvedValue({
-      items: [
-        {
-          status: {
-            configurationResult: JSON.stringify({
-              name: 'test-config',
-              luigiConfigFragment: {
-                data: {
-                  nodes: [{ entityType: 'core_platform-mesh_io_account' }],
+    kcpKubernetesServiceMock.listClusterCustomObjectInKcpVirtualWorkspace.mockResolvedValue(
+      {
+        items: [
+          {
+            status: {
+              configurationResult: JSON.stringify({
+                name: 'test-config',
+                luigiConfigFragment: {
+                  data: {
+                    nodes: [{ entityType: 'core_platform-mesh_io_account' }],
+                  },
                 },
-              },
-            }),
+              }),
+            },
+            spec: { remoteConfiguration: { url: 'http://example.com' } },
           },
-          spec: { remoteConfiguration: { url: 'http://example.com' } },
-        },
-      ],
-    });
+        ],
+      },
+    );
 
     const svc = new KubernetesServiceProvidersService(kcpKubernetesServiceMock);
     const res = await svc.getServiceProviders('token', ['main'], {
