@@ -53,7 +53,7 @@ export class PMAuthConfigProvider implements AuthConfigService {
     }
 
     return {
-      idpName: clientId,
+      idpName: org,
       baseDomain,
       clientId,
       clientSecret,

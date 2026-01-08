@@ -92,7 +92,7 @@ describe('PMAuthConfigProvider', () => {
       const result = await provider.getAuthConfig(mockRequest);
 
       expect(result).toEqual({
-        idpName: 'client-org1',
+        idpName: 'org1',
         baseDomain: 'example.com',
         clientId: 'client-org1',
         clientSecret: 'secret-org1',
