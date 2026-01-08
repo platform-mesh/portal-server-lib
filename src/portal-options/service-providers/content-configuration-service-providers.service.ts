@@ -56,7 +56,7 @@ export class ContentConfigurationServiceProvidersService implements ServiceProvi
       );
 
       // Validate response structure
-      if (!response?.ui_platform_mesh_io?.ContentConfigurations) {
+      if (!response?.ui_platform_mesh_io?.v1alpha1?.ContentConfigurations) {
         throw new Error(
           'Invalid response structure: missing ContentConfigurations',
         );
@@ -64,7 +64,7 @@ export class ContentConfigurationServiceProvidersService implements ServiceProvi
 
       const entity = !entities || !entities.length ? 'main' : entities[0];
       const contentConfigurations =
-        response.ui_platform_mesh_io.ContentConfigurations.items
+        response.ui_platform_mesh_io.v1alpha1.ContentConfigurations.items
           .filter(
             (item) =>
               item.metadata.labels?.['ui.platform-mesh.io/entity'] === entity,

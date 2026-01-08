@@ -3,19 +3,21 @@ import { gql } from 'graphql-request';
 export const contentConfigurationsQuery = gql`
 query {
   ui_platform_mesh_io {
-    ContentConfigurations {
-      items {
-        metadata {
-          name
-          labels
-        }
-        spec {
-          remoteConfiguration {
-            url
+    v1alpha1 {
+      ContentConfigurations {
+        items {
+          metadata {
+            name
+            labels
           }
-        }
-        status {
-          configurationResult
+          spec {
+            remoteConfiguration {
+              url
+            }
+          }
+          status {
+            configurationResult
+          }
         }
       }
     }
