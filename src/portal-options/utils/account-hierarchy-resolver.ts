@@ -1,8 +1,5 @@
 import { ContentConfiguration } from '@openmfp/portal-server-lib';
 
-
-
-
 const ACCOUNT_ENTITY_TYPE = 'core_platform-mesh_io_account';
 
 export const updateEntityTypeFromAccountPath = (
