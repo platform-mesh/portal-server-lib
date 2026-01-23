@@ -106,13 +106,19 @@ describe('PMAuthConfigProvider', () => {
     it('should handle welcome organization', async () => {
       jest.spyOn(domainUtils, 'getOrganization').mockReturnValue('welcome');
 
-      const { mockReadNamespacedSecret } = require('@kubernetes/client-node');
-      mockReadNamespacedSecret.mockResolvedValue({
-        data: {
-          'attribute.client_secret':
-            Buffer.from('welcome-secret').toString('base64'),
+      const mockIdpConfig: IdentityProviderConfiguration = {
+        status: {
+          managedClients: {
+            welcome: {
+              clientId: 'welcome',
+            },
+          },
         },
-      });
+      } as IdentityProviderConfiguration;
+      kcpKubernetesService.getClusterCustomObjectByWorkspacePath.mockResolvedValue(
+        mockIdpConfig,
+      );
+      kcpKubernetesService.getClientSecret.mockResolvedValue('welcome-secret');
 
       const result = await provider.getAuthConfig(mockRequest);
 
@@ -386,82 +392,6 @@ describe('PMAuthConfigProvider', () => {
       kcpKubernetesService.getClientSecret.mockResolvedValue('secret-org1');
 
       await expect(provider.getAuthConfig(mockRequest)).rejects.toThrow();
-    });
-  });
-
-  describe('getWelcomeClientSecret', () => {
-    it('should read welcome client secret from Kubernetes secret', async () => {
-      jest.spyOn(domainUtils, 'getOrganization').mockReturnValue('welcome');
-
-      const { mockReadNamespacedSecret } = require('@kubernetes/client-node');
-      const secretValue = 'my-welcome-secret';
-      mockReadNamespacedSecret.mockResolvedValue({
-        data: {
-          'attribute.client_secret':
-            Buffer.from(secretValue).toString('base64'),
-        },
-      });
-
-      const result = await provider.getAuthConfig(mockRequest);
-
-      expect(mockReadNamespacedSecret).toHaveBeenCalledWith({
-        namespace: 'platform-mesh-system',
-        name: 'portal-client-secret-welcome',
-      });
-      expect(result.clientSecret).toBe(secretValue);
-    });
-
-    it('should decode base64 secret correctly', async () => {
-      jest.spyOn(domainUtils, 'getOrganization').mockReturnValue('welcome');
-
-      const { mockReadNamespacedSecret } = require('@kubernetes/client-node');
-      const secretValue = 'special-chars-@#$%';
-      mockReadNamespacedSecret.mockResolvedValue({
-        data: {
-          'attribute.client_secret':
-            Buffer.from(secretValue).toString('base64'),
-        },
-      });
-
-      const result = await provider.getAuthConfig(mockRequest);
-
-      expect(result.clientSecret).toBe(secretValue);
-    });
-
-    it('should throw error when secret read fails', async () => {
-      jest.spyOn(domainUtils, 'getOrganization').mockReturnValue('welcome');
-
-      const { mockReadNamespacedSecret } = require('@kubernetes/client-node');
-      const error = new Error('Secret not found');
-      mockReadNamespacedSecret.mockRejectedValue(error);
-
-      const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
-
-      await expect(provider.getAuthConfig(mockRequest)).rejects.toThrow(
-        'Secret not found',
-      );
-      expect(consoleSpy).toHaveBeenCalled();
-
-      consoleSpy.mockRestore();
-    });
-
-    it('should log error with response body if available', async () => {
-      jest.spyOn(domainUtils, 'getOrganization').mockReturnValue('welcome');
-
-      const { mockReadNamespacedSecret } = require('@kubernetes/client-node');
-      const error: any = new Error('Secret not found');
-      error.response = { body: { message: 'Not found in namespace' } };
-      mockReadNamespacedSecret.mockRejectedValue(error);
-
-      const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
-
-      await expect(provider.getAuthConfig(mockRequest)).rejects.toThrow();
-      expect(consoleSpy).toHaveBeenCalledWith(
-        'Failed to fetch secret portal-client-secret-welcome:',
-        { message: 'Not found in namespace' },
-      );
-
-      consoleSpy.mockRestore();
     });
   });
 
