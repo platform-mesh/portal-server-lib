@@ -27,6 +27,7 @@
     }
   },
   "scripts": {
+    "prepare": "npm run build",
     "build": "nest build",
     "build:watch": "mkdirp dist && nodemon --ignore dist --ext js,yml,yaml,ts,html,css,scss,json,md --exec \"rimraf dist && npm run build && yalc publish --push --sig\"",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\" \"libs/**/*.ts\"",
