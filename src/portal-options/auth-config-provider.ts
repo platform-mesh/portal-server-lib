@@ -4,7 +4,6 @@ import {
 } from './models/k8s.js';
 import { KcpKubernetesService } from './services/kcp-k8s.service.js';
 import { getDiscoveryEndpoint, getOrganization } from './utils/domain.js';
-import { CoreV1Api, KubeConfig } from '@kubernetes/client-node';
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import {
   AuthConfigService,
@@ -24,11 +23,13 @@ export class PMAuthConfigProvider implements AuthConfigService {
     const oidcUrl = getDiscoveryEndpoint(request);
     const org = getOrganization(request);
 
-    const clientId =
-      org === 'welcome' ? 'welcome' : await this.readClientId(org);
+    const clientId = await this.readClientId(org);
     const clientSecret =
       org === 'welcome'
-        ? await this.getWelcomeClientSecret(org)
+        ? await this.kcpKubernetesService.getClientSecret(
+            org,
+            `portal-client-secret-${org}`,
+          )
         : await this.kcpKubernetesService.getClientSecret(org);
 
     const baseDomain = process.env['BASE_DOMAINS_DEFAULT'];
@@ -72,6 +73,15 @@ export class PMAuthConfigProvider implements AuthConfigService {
       name: orgName,
     };
 
+    if (orgName === 'welcome') {
+      const result: IdentityProviderConfiguration =
+        await this.kcpKubernetesService.getClusterCustomObjectByWorkspacePath(
+          k8sResourceDescriptor,
+          'root:platform-mesh-system',
+        );
+      return result.status.managedClients[orgName].clientId;
+    }
+
     const result: IdentityProviderConfiguration =
       await this.kcpKubernetesService.listClusterCustomObject(
         k8sResourceDescriptor,
@@ -80,32 +90,5 @@ export class PMAuthConfigProvider implements AuthConfigService {
         },
       );
     return result.status.managedClients[orgName].clientId;
-  }
-
-  private async getWelcomeClientSecret(orgName: string) {
-    const secretName = `portal-client-secret-${orgName}`;
-    const namespace = 'platform-mesh-system';
-
-    const kc = new KubeConfig();
-    kc.loadFromDefault();
-    const k8sApi = kc.makeApiClient(CoreV1Api);
-    try {
-      const res = await k8sApi.readNamespacedSecret({
-        namespace,
-        name: secretName,
-      });
-      const secretData = res.data;
-
-      return Buffer.from(
-        secretData['attribute.client_secret'],
-        'base64',
-      ).toString('utf-8');
-    } catch (err) {
-      console.error(
-        `Failed to fetch secret ${secretName}:`,
-        err.response?.body || err,
-      );
-      throw err;
-    }
   }
 }
