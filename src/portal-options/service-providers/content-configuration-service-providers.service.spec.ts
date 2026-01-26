@@ -1,3 +1,4 @@
+import { Logger } from '@nestjs/common';
 import { RequestContext } from '../pm-request-context-provider.js';
 import { ContentConfigurationServiceProvidersService } from './content-configuration-service-providers.service.js';
 import { welcomeNodeConfig } from './models/welcome-node-config.js';
@@ -13,6 +14,10 @@ jest.mock('graphql-request', () => {
     },
   };
 });
+
+// Mock the Logger to capture warnings
+const mockLoggerWarn = jest.fn();
+jest.spyOn(Logger.prototype, 'warn').mockImplementation(mockLoggerWarn);
 
 describe('ContentConfigurationServiceProvidersService', () => {
   let service: ContentConfigurationServiceProvidersService;
@@ -30,6 +35,7 @@ describe('ContentConfigurationServiceProvidersService', () => {
         'http://example.com/kubernetes-graphql-gateway/root/graphql',
       account: 'acc1',
     } as RequestContext;
+    mockLoggerWarn.mockClear();
   });
 
   it('throws if token is missing', async () => {
@@ -127,7 +133,7 @@ describe('ContentConfigurationServiceProvidersService', () => {
     );
   });
 
-  it('throws on missing configurationResult', async () => {
+  it('skips items with missing configurationResult and logs warning', async () => {
     mockClient.request.mockResolvedValue({
       ui_platform_mesh_io: {
         v1alpha1: {
@@ -146,9 +152,112 @@ describe('ContentConfigurationServiceProvidersService', () => {
         },
       },
     });
-    await expect(
-      service.getServiceProviders('token', ['entity'], context),
-    ).rejects.toThrow('Missing configurationResult');
+    const result = await service.getServiceProviders(
+      'token',
+      ['entity'],
+      context,
+    );
+
+    // Should return empty content configurations (item was skipped)
+    expect(result.rawServiceProviders[0].contentConfiguration).toHaveLength(0);
+
+    // Should log a warning about the skipped item
+    expect(mockLoggerWarn).toHaveBeenCalledWith(
+      expect.stringContaining("Skipping ContentConfiguration 'conf1'"),
+    );
+    expect(mockLoggerWarn).toHaveBeenCalledWith(
+      expect.stringContaining('missing configurationResult'),
+    );
+  });
+
+  it('skips items with invalid JSON in configurationResult and logs warning', async () => {
+    mockClient.request.mockResolvedValue({
+      ui_platform_mesh_io: {
+        v1alpha1: {
+          ContentConfigurations: {
+            items: [
+              {
+                metadata: {
+                  name: 'invalid-json',
+                  labels: { 'ui.platform-mesh.io/entity': 'entity' },
+                },
+                spec: { remoteConfiguration: { url: 'http://remote' } },
+                status: { configurationResult: 'not valid json {' },
+              },
+            ],
+          },
+        },
+      },
+    });
+    const result = await service.getServiceProviders(
+      'token',
+      ['entity'],
+      context,
+    );
+
+    // Should return empty content configurations (item was skipped)
+    expect(result.rawServiceProviders[0].contentConfiguration).toHaveLength(0);
+
+    // Should log a warning about the skipped item
+    expect(mockLoggerWarn).toHaveBeenCalledWith(
+      expect.stringContaining("Skipping ContentConfiguration 'invalid-json'"),
+    );
+    expect(mockLoggerWarn).toHaveBeenCalledWith(
+      expect.stringContaining('failed to parse configurationResult'),
+    );
+  });
+
+  it('processes valid items while skipping invalid ones', async () => {
+    mockClient.request.mockResolvedValue({
+      ui_platform_mesh_io: {
+        v1alpha1: {
+          ContentConfigurations: {
+            items: [
+              {
+                metadata: {
+                  name: 'valid-config',
+                  labels: { 'ui.platform-mesh.io/entity': 'entity' },
+                },
+                spec: { remoteConfiguration: { url: 'http://remote' } },
+                status: {
+                  configurationResult: JSON.stringify({ url: 'http://valid' }),
+                },
+              },
+              {
+                metadata: {
+                  name: 'missing-result',
+                  labels: { 'ui.platform-mesh.io/entity': 'entity' },
+                },
+                spec: { remoteConfiguration: { url: 'http://remote' } },
+                status: {},
+              },
+              {
+                metadata: {
+                  name: 'invalid-json',
+                  labels: { 'ui.platform-mesh.io/entity': 'entity' },
+                },
+                spec: { remoteConfiguration: { url: 'http://remote' } },
+                status: { configurationResult: 'not json' },
+              },
+            ],
+          },
+        },
+      },
+    });
+    const result = await service.getServiceProviders(
+      'token',
+      ['entity'],
+      context,
+    );
+
+    // Should only return the valid configuration
+    expect(result.rawServiceProviders[0].contentConfiguration).toHaveLength(1);
+    expect(result.rawServiceProviders[0].contentConfiguration[0].url).toBe(
+      'http://valid',
+    );
+
+    // Should log warnings for both skipped items
+    expect(mockLoggerWarn).toHaveBeenCalledTimes(2);
   });
 
   it('throws if response structure is invalid', async () => {

@@ -3,7 +3,7 @@ import { processContentConfigurationForAccountHierarchy } from '../utils/account
 import { contentConfigurationsQuery } from './contentconfigurations-query.js';
 import { ContentConfigurationQueryResponse } from './models/contentconfigurations.js';
 import { welcomeNodeConfig } from './models/welcome-node-config.js';
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import {
   ContentConfiguration,
   ServiceProviderResponse,
@@ -13,6 +13,9 @@ import { GraphQLClient } from 'graphql-request';
 
 @Injectable()
 export class ContentConfigurationServiceProvidersService implements ServiceProviderService {
+  private readonly logger = new Logger(
+    ContentConfigurationServiceProvidersService.name,
+  );
   async getServiceProviders(
     token: string,
     entities: string[],
@@ -71,11 +74,16 @@ export class ContentConfigurationServiceProvidersService implements ServiceProvi
           )
           .map((item) => {
             try {
-              // Validate required fields
+              // Skip items without configurationResult (not ready yet)
+              // This can happen when the ContentConfiguration resource exists but
+              // the remote configuration hasn't been fetched yet (e.g., DNS failure,
+              // network issues, or the remote server is unavailable)
               if (!item.status?.configurationResult) {
-                throw new Error(
-                  `Missing configurationResult for item: ${item.metadata?.name || 'unknown'}`,
+                this.logger.warn(
+                  `Skipping ContentConfiguration '${item.metadata?.name || 'unknown'}': ` +
+                    `missing configurationResult (resource may not be ready)`,
                 );
+                return null;
               }
 
               const contentConfiguration = JSON.parse(
@@ -98,23 +106,17 @@ export class ContentConfigurationServiceProvidersService implements ServiceProvi
               return contentConfiguration;
             } catch (parseError) {
               // Log the error but don't fail the entire operation
-              console.error(
-                `Failed to parse configuration for item ${item.metadata?.name || 'unknown'}:`,
-                parseError,
+              // Skip items with invalid JSON in configurationResult
+              this.logger.warn(
+                `Skipping ContentConfiguration '${item.metadata?.name || 'unknown'}': ` +
+                  `failed to parse configurationResult - ${parseError instanceof Error ? parseError.message : 'unknown error'}`,
               );
-
-              // Re-throw specific errors as-is, others as JSON parse errors
-              if (
-                parseError instanceof Error &&
-                parseError.message.includes('Missing configurationResult')
-              ) {
-                throw parseError;
-              }
-              throw new Error(
-                `Invalid JSON in configurationResult for item: ${item.metadata?.name || 'unknown'}`,
-              );
+              return null;
             }
-          });
+          })
+          .filter(
+            (config): config is ContentConfiguration => config !== null,
+          );
 
       return {
         rawServiceProviders: [
@@ -127,13 +129,6 @@ export class ContentConfigurationServiceProvidersService implements ServiceProvi
         ],
       };
     } catch (error) {
-      // Re-throw with more context if it's not already our custom error
-      if (
-        error instanceof Error &&
-        error.message.includes('configurationResult')
-      ) {
-        throw error;
-      }
       throw new Error(
         `Failed to fetch content configurations: ${error instanceof Error ? error.message : 'Unknown error'}`,
       );
