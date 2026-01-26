@@ -335,6 +335,35 @@ describe('KcpKubernetesService', () => {
       );
     });
 
+    it('executes post middleware', async () => {
+      const svc = new KcpKubernetesService();
+      const gvr: K8sResourceDescriptor = {
+        group: 'apps',
+        version: 'v1',
+        plural: 'deployments',
+        name: 'my-deployment',
+      };
+      const context: K8sRequestContext = {
+        organization: 'org1',
+        'core_platform-mesh_io_account': 'acc1',
+      };
+
+      let postResult: any;
+      mockListClusterCustomObject.mockImplementation(async (_gvr, options) => {
+        const middleware = options.middleware[0];
+        const mockContext = {
+          setUrl: jest.fn(),
+        };
+        await middleware.options.pre(mockContext);
+        postResult = await middleware.options.post(mockContext);
+        return { data: {} };
+      });
+
+      await svc.listClusterCustomObject(gvr, context);
+
+      expect(postResult).toBeDefined();
+    });
+
     it('builds correct URL path in middleware', async () => {
       const svc = new KcpKubernetesService();
       const gvr: K8sResourceDescriptor = {
@@ -577,6 +606,30 @@ describe('KcpKubernetesService', () => {
       expect(capturedContext.setUrl).toHaveBeenCalledWith(
         'https://kcp.example.com/clusters/root:orgs/api/v1/namespaces/default/secrets/portal-client-secret-url-org-url-org',
       );
+    });
+
+    it('executes post middleware', async () => {
+      const svc = new KcpKubernetesService();
+      const orgName = 'post-org';
+
+      let postResult: any;
+      mockReadNamespacedSecret.mockImplementation(async (_params, options) => {
+        const middleware = options.middleware[0];
+        const mockContext = {
+          setUrl: jest.fn(),
+        };
+        await middleware.options.pre(mockContext);
+        postResult = await middleware.options.post(mockContext);
+        return {
+          data: {
+            client_secret: Buffer.from('test').toString('base64'),
+          },
+        };
+      });
+
+      await svc.getClientSecret(orgName);
+
+      expect(postResult).toBeDefined();
     });
 
     it('throws error when secret retrieval fails', async () => {
