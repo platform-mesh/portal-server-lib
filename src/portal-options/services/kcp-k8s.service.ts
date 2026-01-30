@@ -94,9 +94,13 @@ export class KcpKubernetesService {
     const account = request.query?.['core_platform-mesh_io_account'];
     const path = this.buildWorkspacePath(organization, account);
 
+    const kcpUrl = process.env.KCP_URL || '';
+    if (kcpUrl) {
+      return `${kcpUrl}/clusters/${path}`;
+    }
+
     const baseDomain = process.env.BASE_DOMAINS_DEFAULT;
     const port = this.getAppPort(request);
-
     return `https://kcp.api.${baseDomain}${port}/clusters/${path}`;
   }
 
