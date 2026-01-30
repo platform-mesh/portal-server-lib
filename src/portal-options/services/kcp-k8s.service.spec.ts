@@ -185,6 +185,21 @@ describe('KcpKubernetesService', () => {
       );
     });
 
+    it('builds URL with KCP_URL parameter when provided', () => {
+      const svc = new KcpKubernetesService();
+      process.env.KCP_URL = 'https://my.com:6676';
+
+      const req = makeReq({
+        query: { 'core_platform-mesh_io_account': 'acc-1' } as any,
+        headers: { host: 'kcp.api.example.com' } as any,
+      });
+
+      const url = svc.getKcpWorkspacePublicUrl(req);
+
+      expect(url).toBe('https://my.com:6676/clusters/root:orgs:org-1:acc-1');
+      delete process.env.KCP_URL;
+    });
+
     it('omits port for standard port 80', () => {
       const svc = new KcpKubernetesService();
       const req = makeReq({
