@@ -57,7 +57,7 @@ export class KubernetesServiceProvidersService implements ServiceProviderService
 
         const accountPath =
           context.accountPath || context['core_platform-mesh_io_account'];
-        if (accountPath) {
+        if (accountPath && !context.skipEntityTypeRecalculation) {
           processContentConfigurationForAccountHierarchy(
             contentConfiguration,
             accountPath,
@@ -89,9 +89,9 @@ export class KubernetesServiceProvidersService implements ServiceProviderService
       group: 'ui.platform-mesh.io',
       version: 'v1alpha1',
       plural: 'contentconfigurations',
-      labelSelector: `ui.platform-mesh.io/entity=${entity}`,
     };
 
+    console.log(`ui.platform-mesh.io/entity=${entity}`);
     try {
       return await this.kcpKubernetesService.listClusterCustomObjectInKcpVirtualWorkspace(
         gvr,

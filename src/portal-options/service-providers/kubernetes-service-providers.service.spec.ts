@@ -289,67 +289,6 @@ describe('KubernetesServiceProvidersService', () => {
       );
     });
 
-    it('should use main entity when entities array is empty', async () => {
-      const mockResponse = { items: [] };
-      kcpKubernetesServiceMock.listClusterCustomObjectInKcpVirtualWorkspace.mockResolvedValue(
-        mockResponse as any,
-      );
-
-      await service.getServiceProviders(mockToken, [], mockContext);
-
-      expect(
-        kcpKubernetesServiceMock.listClusterCustomObjectInKcpVirtualWorkspace,
-      ).toHaveBeenCalledWith(
-        expect.objectContaining({
-          labelSelector: 'ui.platform-mesh.io/entity=main',
-        }),
-        mockContext,
-        mockToken,
-      );
-    });
-
-    it('should use main entity when entities is null', async () => {
-      const mockResponse = { items: [] };
-      kcpKubernetesServiceMock.listClusterCustomObjectInKcpVirtualWorkspace.mockResolvedValue(
-        mockResponse as any,
-      );
-
-      await service.getServiceProviders(mockToken, null as any, mockContext);
-
-      expect(
-        kcpKubernetesServiceMock.listClusterCustomObjectInKcpVirtualWorkspace,
-      ).toHaveBeenCalledWith(
-        expect.objectContaining({
-          labelSelector: 'ui.platform-mesh.io/entity=main',
-        }),
-        mockContext,
-        mockToken,
-      );
-    });
-
-    it('should use first entity from array', async () => {
-      const mockResponse = { items: [] };
-      kcpKubernetesServiceMock.listClusterCustomObjectInKcpVirtualWorkspace.mockResolvedValue(
-        mockResponse as any,
-      );
-
-      await service.getServiceProviders(
-        mockToken,
-        ['entity1', 'entity2'],
-        mockContext,
-      );
-
-      expect(
-        kcpKubernetesServiceMock.listClusterCustomObjectInKcpVirtualWorkspace,
-      ).toHaveBeenCalledWith(
-        expect.objectContaining({
-          labelSelector: 'ui.platform-mesh.io/entity=entity1',
-        }),
-        mockContext,
-        mockToken,
-      );
-    });
-
     it('should call kubernetes service with correct GVR', async () => {
       const mockResponse = { items: [] };
       kcpKubernetesServiceMock.listClusterCustomObjectInKcpVirtualWorkspace.mockResolvedValue(
@@ -362,7 +301,6 @@ describe('KubernetesServiceProvidersService', () => {
         group: 'ui.platform-mesh.io',
         version: 'v1alpha1',
         plural: 'contentconfigurations',
-        labelSelector: 'ui.platform-mesh.io/entity=test-entity',
       };
 
       expect(
