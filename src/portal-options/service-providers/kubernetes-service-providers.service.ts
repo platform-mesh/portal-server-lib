@@ -91,7 +91,6 @@ export class KubernetesServiceProvidersService implements ServiceProviderService
       plural: 'contentconfigurations',
     };
 
-    console.log(`ui.platform-mesh.io/entity=${entity}`);
     try {
       return await this.kcpKubernetesService.listClusterCustomObjectInKcpVirtualWorkspace(
         gvr,
