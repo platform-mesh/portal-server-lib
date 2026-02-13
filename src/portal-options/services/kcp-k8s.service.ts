@@ -152,25 +152,6 @@ export class KcpKubernetesService {
     });
   }
 
-  // public async getClusterCustomObjectByWorkspacePath(
-  //   gvr: K8sResourceDescriptor,
-  //   workspacePath: string,
-  // ) {
-  //   return await this.k8sCustomObjectsApi.listClusterCustomObject(gvr, {
-  //     middleware: [
-  //       new PromiseMiddlewareWrapper({
-  //         pre: async (context) => {
-  //           const path = `${this.baseUrl.origin}/clusters/${workspacePath}/apis/${gvr.group}/${gvr.version}/${gvr.plural}/${gvr.name}`;
-  //           this.logger.log(`kcp url: ${path}`);
-  //           context.setUrl(path);
-  //           return context;
-  //         },
-  //         post: async (context) => context,
-  //       }),
-  //     ],
-  //   });
-  // }
-
   public async listClusterCustomObjectInKcpVirtualWorkspace(
     gvr: K8sResourceDescriptor,
     requestContext: K8sRequestContext,
