@@ -126,7 +126,7 @@ export class KcpKubernetesService {
   public async listClusterCustomObject(
     gvr: K8sResourceDescriptor,
     requestContext: K8sRequestContext,
-    workspacePath: string,
+    workspacePath?: string,
   ) {
     return await this.k8sCustomObjectsApi.listClusterCustomObject(gvr, {
       middleware: [
@@ -201,7 +201,7 @@ export class KcpKubernetesService {
     });
   }
 
-  public async getClientSecret(orgName: string, secretName: string) {
+  public async getClientSecret(secretName: string) {
     const namespace = 'default';
 
     try {

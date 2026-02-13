@@ -24,10 +24,8 @@ export class PMAuthConfigProvider implements AuthConfigService {
     const org = getOrganization(request);
 
     const { clientId, secretRefName } = await this.readClientId(org);
-    const clientSecret = await this.kcpKubernetesService.getClientSecret(
-      org,
-      secretRefName,
-    );
+    const clientSecret =
+      await this.kcpKubernetesService.getClientSecret(secretRefName);
 
     const baseDomain = process.env['BASE_DOMAINS_DEFAULT'];
     const oidc = await this.discoveryService.getOIDC(oidcUrl);

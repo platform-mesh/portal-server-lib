@@ -553,7 +553,6 @@ describe('KcpKubernetesService', () => {
   describe('getClientSecret', () => {
     it('retrieves and decodes client secret successfully', async () => {
       const svc = new KcpKubernetesService();
-      const orgName = 'test-org';
       const encodedSecret = Buffer.from('my-secret-value').toString('base64');
 
       mockReadNamespacedSecret.mockResolvedValue({
@@ -562,7 +561,9 @@ describe('KcpKubernetesService', () => {
         },
       });
 
-      const result = await svc.getClientSecret(orgName);
+      const result = await svc.getClientSecret(
+        'portal-client-secret-test-org-test-org',
+      );
 
       expect(result).toBe('my-secret-value');
       expect(mockReadNamespacedSecret).toHaveBeenCalledWith(
@@ -578,7 +579,6 @@ describe('KcpKubernetesService', () => {
 
     it('builds correct secret name and namespace', async () => {
       const svc = new KcpKubernetesService();
-      const orgName = 'my-company';
 
       mockReadNamespacedSecret.mockResolvedValue({
         data: {
@@ -586,7 +586,7 @@ describe('KcpKubernetesService', () => {
         },
       });
 
-      await svc.getClientSecret(orgName);
+      await svc.getClientSecret('portal-client-secret-my-company-my-company');
 
       expect(mockReadNamespacedSecret).toHaveBeenCalledWith(
         {
@@ -599,7 +599,6 @@ describe('KcpKubernetesService', () => {
 
     it('uses correct workspace URL in middleware', async () => {
       const svc = new KcpKubernetesService();
-      const orgName = 'url-org';
 
       let capturedContext: any;
       mockReadNamespacedSecret.mockImplementation(async (params, options) => {
@@ -616,7 +615,7 @@ describe('KcpKubernetesService', () => {
         };
       });
 
-      await svc.getClientSecret(orgName);
+      await svc.getClientSecret('portal-client-secret-url-org-url-org');
 
       expect(capturedContext.setUrl).toHaveBeenCalledWith(
         'https://kcp.example.com/clusters/root:orgs/api/v1/namespaces/default/secrets/portal-client-secret-url-org-url-org',

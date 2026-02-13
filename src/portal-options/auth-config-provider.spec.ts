@@ -79,6 +79,7 @@ describe('PMAuthConfigProvider', () => {
           managedClients: {
             org1: {
               clientId: 'client-org1',
+              secretRef: { name: 'secret-org1', namespace: 'default' },
             },
           },
         },
@@ -111,22 +112,30 @@ describe('PMAuthConfigProvider', () => {
           managedClients: {
             welcome: {
               clientId: 'welcome',
+              secretRef: { name: 'secret-org1-welcome', namespace: 'default' },
             },
           },
         },
       } as IdentityProviderConfiguration;
-      kcpKubernetesService.getClusterCustomObjectByWorkspacePath.mockResolvedValue(
+      kcpKubernetesService.listClusterCustomObject.mockResolvedValue(
         mockIdpConfig,
       );
-      kcpKubernetesService.getClientSecret.mockResolvedValue('welcome-secret');
+      kcpKubernetesService.getClientSecret.mockResolvedValue('secret-org1');
 
       const result = await provider.getAuthConfig(mockRequest);
 
       expect(result.clientId).toBe('welcome');
-      expect(result.clientSecret).toBe('welcome-secret');
-      expect(
-        kcpKubernetesService.listClusterCustomObject,
-      ).not.toHaveBeenCalled();
+      expect(result.clientSecret).toBe('secret-org1');
+      expect(kcpKubernetesService.listClusterCustomObject).toHaveBeenCalledWith(
+        {
+          group: 'core.platform-mesh.io',
+          name: 'welcome',
+          plural: 'identityproviderconfigurations',
+          version: 'v1alpha1',
+        },
+        { organization: 'welcome' },
+        'root:platform-mesh-system',
+      );
     });
 
     it('should fall back to default auth URLs when OIDC discovery fails', async () => {
@@ -137,6 +146,7 @@ describe('PMAuthConfigProvider', () => {
           managedClients: {
             org1: {
               clientId: 'client-org1',
+              secretRef: { name: 'secret-org1', namespace: 'default' },
             },
           },
         },
@@ -164,6 +174,7 @@ describe('PMAuthConfigProvider', () => {
           managedClients: {
             org1: {
               clientId: 'client-org1',
+              secretRef: { name: 'secret-org1', namespace: 'default' },
             },
           },
         },
@@ -191,6 +202,7 @@ describe('PMAuthConfigProvider', () => {
           managedClients: {
             org1: {
               clientId: 'client-org1',
+              secretRef: { name: 'secret-org1', namespace: 'default' },
             },
           },
         },
@@ -212,6 +224,7 @@ describe('PMAuthConfigProvider', () => {
           managedClients: {
             org1: {
               clientId: '',
+              secretRef: { name: 'secret-org1', namespace: 'default' },
             },
           },
         },
@@ -233,6 +246,7 @@ describe('PMAuthConfigProvider', () => {
           managedClients: {
             org1: {
               clientId: 'client-org1',
+              secretRef: { name: 'secret-org1', namespace: 'default' },
             },
           },
         },
@@ -257,6 +271,7 @@ describe('PMAuthConfigProvider', () => {
           managedClients: {
             org1: {
               clientId: 'client-org1',
+              secretRef: { name: 'secret-org1', namespace: 'default' },
             },
           },
         },
@@ -285,6 +300,7 @@ describe('PMAuthConfigProvider', () => {
           managedClients: {
             org1: {
               clientId: 'client-org1',
+              secretRef: { name: 'secret-org1', namespace: 'default' },
             },
           },
         },
@@ -308,6 +324,7 @@ describe('PMAuthConfigProvider', () => {
           managedClients: {
             org1: {
               clientId: 'client-org1',
+              secretRef: { name: 'secret-org1', namespace: 'default' },
             },
           },
         },
@@ -329,6 +346,7 @@ describe('PMAuthConfigProvider', () => {
           managedClients: {
             org1: {
               clientId: 'client-org1',
+              secretRef: { name: 'secret-org1', namespace: 'default' },
             },
           },
         },
@@ -354,6 +372,7 @@ describe('PMAuthConfigProvider', () => {
           managedClients: {
             org1: {
               clientId: 'client-org1',
+              secretRef: { name: 'secret-org1', namespace: 'default' },
             },
           },
         },
@@ -376,6 +395,7 @@ describe('PMAuthConfigProvider', () => {
         {
           organization: 'org1',
         },
+        undefined,
       );
     });
 
@@ -409,6 +429,7 @@ describe('PMAuthConfigProvider', () => {
           managedClients: {
             org1: {
               clientId: 'client-org1',
+              secretRef: { name: 'secret-org1', namespace: 'default' },
             },
           },
         },
@@ -431,6 +452,7 @@ describe('PMAuthConfigProvider', () => {
           managedClients: {
             org1: {
               clientId: 'client-org1',
+              secretRef: { name: 'secret-org1', namespace: 'default' },
             },
           },
         },
