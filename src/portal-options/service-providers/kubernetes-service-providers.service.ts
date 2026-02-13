@@ -56,7 +56,7 @@ export class KubernetesServiceProvidersService implements ServiceProviderService
 
         const accountPath =
           context.accountPath || context['core_platform-mesh_io_account'];
-        if (accountPath && !context.skipEntityTypeRecalculation) {
+        if (accountPath) {
           processContentConfigurationForAccountHierarchy(
             contentConfiguration,
             accountPath,

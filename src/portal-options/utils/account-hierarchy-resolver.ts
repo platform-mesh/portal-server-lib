@@ -7,6 +7,10 @@ export const updateEntityTypeFromAccountPath = (
   accountPath: string,
 ): ContentConfiguration => {
   contentConfiguration.luigiConfigFragment.data.nodes.forEach((node) => {
+    if (!node.entityType.includes(ACCOUNT_ENTITY_TYPE)) {
+      return;
+    }
+
     const accountPathParts = accountPath
       .split(':')
       .map((_, i) => `${ACCOUNT_ENTITY_TYPE}:${i + 1}`)
