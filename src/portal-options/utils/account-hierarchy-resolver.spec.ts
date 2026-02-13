@@ -260,10 +260,9 @@ describe('processContentConfigurationForAccountHierarchy', () => {
       },
     });
 
-    const result = processContentConfigurationForAccountHierarchy(
-      config,
-      'acc1',
-    );
+    const result = processContentConfigurationForAccountHierarchy(config, {
+      accountPath: 'acc1',
+    });
     const childNode = result.luigiConfigFragment.data.nodes[0]
       .children?.[0] as any;
 
@@ -294,10 +293,9 @@ describe('processContentConfigurationForAccountHierarchy', () => {
       },
     });
 
-    const result = processContentConfigurationForAccountHierarchy(
-      config,
-      'acc1',
-    );
+    const result = processContentConfigurationForAccountHierarchy(config, {
+      accountPath: 'acc1',
+    });
     const childNode = result.luigiConfigFragment.data.nodes[0]
       .children?.[0] as any;
 
@@ -317,10 +315,9 @@ describe('processContentConfigurationForAccountHierarchy', () => {
       },
     });
 
-    const result = processContentConfigurationForAccountHierarchy(
-      config,
-      'acc1:acc2',
-    );
+    const result = processContentConfigurationForAccountHierarchy(config, {
+      accountPath: 'acc1:acc2',
+    });
 
     expect(result.luigiConfigFragment.data.nodes[0].entityType).toBe(
       'core_platform-mesh_io_account:1.core_platform-mesh_io_account:2',
@@ -337,10 +334,9 @@ describe('processContentConfigurationForAccountHierarchy', () => {
       },
     });
 
-    const result = processContentConfigurationForAccountHierarchy(
-      config,
-      'acc1',
-    );
+    const result = processContentConfigurationForAccountHierarchy(config, {
+      accountPath: 'acc1',
+    });
 
     expect(result).toBe(config);
   });

@@ -54,14 +54,10 @@ export class KubernetesServiceProvidersService implements ServiceProviderService
           contentConfiguration.url = item.spec.remoteConfiguration?.url;
         }
 
-        const accountPath =
-          context.accountPath || context['core_platform-mesh_io_account'];
-        if (accountPath) {
-          processContentConfigurationForAccountHierarchy(
-            contentConfiguration,
-            accountPath,
-          );
-        }
+        processContentConfigurationForAccountHierarchy(
+          contentConfiguration,
+          context,
+        );
 
         return contentConfiguration;
       });

@@ -86,14 +86,10 @@ export class ContentConfigurationServiceProvidersService implements ServiceProvi
                 contentConfiguration.url = item.spec.remoteConfiguration?.url;
               }
 
-              const accountPath =
-                context.accountPath || context['core_platform-mesh_io_account'];
-              if (accountPath) {
-                processContentConfigurationForAccountHierarchy(
-                  contentConfiguration,
-                  accountPath,
-                );
-              }
+              processContentConfigurationForAccountHierarchy(
+                contentConfiguration,
+                context,
+              );
 
               return contentConfiguration;
             } catch (parseError) {

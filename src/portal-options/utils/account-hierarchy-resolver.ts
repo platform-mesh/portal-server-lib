@@ -47,11 +47,14 @@ export const updateAccountNodeChildren = (
 
 export const processContentConfigurationForAccountHierarchy = (
   contentConfiguration: ContentConfiguration,
-  accountPath: string,
+  context: Record<string, any>,
 ): ContentConfiguration => {
-  if (contentConfiguration.name === 'accounts') {
-    updateAccountNodeChildren(contentConfiguration, accountPath);
-  }
+  const accountPath = context.accountPath || context[ACCOUNT_ENTITY_TYPE];
+  if (accountPath) {
+    if (contentConfiguration.name === 'accounts') {
+      updateAccountNodeChildren(contentConfiguration, accountPath);
+    }
 
-  return updateEntityTypeFromAccountPath(contentConfiguration, accountPath);
+    return updateEntityTypeFromAccountPath(contentConfiguration, accountPath);
+  }
 };
