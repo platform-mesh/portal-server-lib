@@ -84,8 +84,13 @@ export class KcpKubernetesService {
     );
   }
 
-  getKcpWorkspaceUrl(organization?: string, account?: string) {
-    const path = this.buildWorkspacePath(organization, account);
+  getKcpWorkspaceUrl(
+    organization?: string,
+    account?: string,
+    workspacePath?: string,
+  ) {
+    const path =
+      workspacePath || this.buildWorkspacePath(organization, account);
     return new URL(`${this.baseUrl.origin}/clusters/${path}`);
   }
 
@@ -121,6 +126,7 @@ export class KcpKubernetesService {
   public async listClusterCustomObject(
     gvr: K8sResourceDescriptor,
     requestContext: K8sRequestContext,
+    workspacePath: string,
   ) {
     return await this.k8sCustomObjectsApi.listClusterCustomObject(gvr, {
       middleware: [
@@ -133,6 +139,7 @@ export class KcpKubernetesService {
             const kcpUrl = this.getKcpWorkspaceUrl(
               requestContext.organization,
               accountPath,
+              workspacePath,
             );
             const path = `${kcpUrl}/apis/${gvr.group}/${gvr.version}/${gvr.plural}/${gvr.name}`;
             this.logger.log(`kcp url: ${path}`);
@@ -145,24 +152,24 @@ export class KcpKubernetesService {
     });
   }
 
-  public async getClusterCustomObjectByWorkspacePath(
-    gvr: K8sResourceDescriptor,
-    workspacePath: string,
-  ) {
-    return await this.k8sCustomObjectsApi.listClusterCustomObject(gvr, {
-      middleware: [
-        new PromiseMiddlewareWrapper({
-          pre: async (context) => {
-            const path = `${this.baseUrl.origin}/clusters/${workspacePath}/apis/${gvr.group}/${gvr.version}/${gvr.plural}/${gvr.name}`;
-            this.logger.log(`kcp url: ${path}`);
-            context.setUrl(path);
-            return context;
-          },
-          post: async (context) => context,
-        }),
-      ],
-    });
-  }
+  // public async getClusterCustomObjectByWorkspacePath(
+  //   gvr: K8sResourceDescriptor,
+  //   workspacePath: string,
+  // ) {
+  //   return await this.k8sCustomObjectsApi.listClusterCustomObject(gvr, {
+  //     middleware: [
+  //       new PromiseMiddlewareWrapper({
+  //         pre: async (context) => {
+  //           const path = `${this.baseUrl.origin}/clusters/${workspacePath}/apis/${gvr.group}/${gvr.version}/${gvr.plural}/${gvr.name}`;
+  //           this.logger.log(`kcp url: ${path}`);
+  //           context.setUrl(path);
+  //           return context;
+  //         },
+  //         post: async (context) => context,
+  //       }),
+  //     ],
+  //   });
+  // }
 
   public async listClusterCustomObjectInKcpVirtualWorkspace(
     gvr: K8sResourceDescriptor,
@@ -194,9 +201,7 @@ export class KcpKubernetesService {
     });
   }
 
-  public async getClientSecret(orgName: string, secretNameOverride?: string) {
-    const secretName =
-      secretNameOverride ?? `portal-client-secret-${orgName}-${orgName}`;
+  public async getClientSecret(orgName: string, secretName: string) {
     const namespace = 'default';
 
     try {

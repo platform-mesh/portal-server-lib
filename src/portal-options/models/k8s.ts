@@ -17,7 +17,7 @@ export interface IdentityProviderConfiguration {
     managedClients: {
       [key: string]: {
         clientId: string;
-        secretRef?: {
+        secretRef: {
           name: string;
           namespace: string;
         };

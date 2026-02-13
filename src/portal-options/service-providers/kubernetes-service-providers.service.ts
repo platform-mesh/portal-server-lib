@@ -33,7 +33,6 @@ export class KubernetesServiceProvidersService implements ServiceProviderService
 
     const response = await this.listContentConfigurationsForEntity(
       token,
-      entities,
       context as K8sRequestContext,
     );
 
@@ -81,10 +80,8 @@ export class KubernetesServiceProvidersService implements ServiceProviderService
 
   private async listContentConfigurationsForEntity(
     token: string,
-    entities: string[],
     context: K8sRequestContext,
   ) {
-    const entity = !entities || !entities.length ? 'main' : entities[0];
     const gvr: K8sResourceDescriptor = {
       group: 'ui.platform-mesh.io',
       version: 'v1alpha1',
