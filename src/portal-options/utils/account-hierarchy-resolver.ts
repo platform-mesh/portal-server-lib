@@ -1,8 +1,5 @@
 import { ContentConfiguration } from '@openmfp/portal-server-lib';
 
-
-
-
 const ACCOUNT_ENTITY_TYPE = 'core_platform-mesh_io_account';
 
 export const updateEntityTypeFromAccountPath = (
@@ -10,6 +7,10 @@ export const updateEntityTypeFromAccountPath = (
   accountPath: string,
 ): ContentConfiguration => {
   contentConfiguration.luigiConfigFragment.data.nodes.forEach((node) => {
+    if (!node.entityType.includes(ACCOUNT_ENTITY_TYPE)) {
+      return;
+    }
+
     const accountPathParts = accountPath
       .split(':')
       .map((_, i) => `${ACCOUNT_ENTITY_TYPE}:${i + 1}`)
@@ -46,11 +47,14 @@ export const updateAccountNodeChildren = (
 
 export const processContentConfigurationForAccountHierarchy = (
   contentConfiguration: ContentConfiguration,
-  accountPath: string,
+  context: Record<string, any>,
 ): ContentConfiguration => {
-  if (contentConfiguration.name === 'accounts') {
-    updateAccountNodeChildren(contentConfiguration, accountPath);
-  }
+  const accountPath = context.accountPath || context[ACCOUNT_ENTITY_TYPE];
+  if (accountPath) {
+    if (contentConfiguration.name === 'accounts') {
+      updateAccountNodeChildren(contentConfiguration, accountPath);
+    }
 
-  return updateEntityTypeFromAccountPath(contentConfiguration, accountPath);
+    return updateEntityTypeFromAccountPath(contentConfiguration, accountPath);
+  }
 };

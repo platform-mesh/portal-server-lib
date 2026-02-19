@@ -4,7 +4,6 @@ import {
 } from './models/k8s.js';
 import { KcpKubernetesService } from './services/kcp-k8s.service.js';
 import { getDiscoveryEndpoint, getOrganization } from './utils/domain.js';
-import { CoreV1Api, KubeConfig } from '@kubernetes/client-node';
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import {
   AuthConfigService,
@@ -24,12 +23,9 @@ export class PMAuthConfigProvider implements AuthConfigService {
     const oidcUrl = getDiscoveryEndpoint(request);
     const org = getOrganization(request);
 
-    const clientId =
-      org === 'welcome' ? 'welcome' : await this.readClientId(org);
+    const { clientId, secretRefName } = await this.readClientId(org);
     const clientSecret =
-      org === 'welcome'
-        ? await this.getWelcomeClientSecret(org)
-        : await this.kcpKubernetesService.getClientSecret(org);
+      await this.kcpKubernetesService.getClientSecret(secretRefName);
 
     const baseDomain = process.env['BASE_DOMAINS_DEFAULT'];
     const oidc = await this.discoveryService.getOIDC(oidcUrl);
@@ -53,7 +49,7 @@ export class PMAuthConfigProvider implements AuthConfigService {
     }
 
     return {
-      idpName: clientId,
+      idpName: org,
       baseDomain,
       clientId,
       clientSecret,
@@ -64,7 +60,9 @@ export class PMAuthConfigProvider implements AuthConfigService {
     };
   }
 
-  private async readClientId(orgName: string): Promise<string> {
+  private async readClientId(
+    orgName: string,
+  ): Promise<{ clientId: string; secretRefName: string }> {
     const k8sResourceDescriptor: K8sResourceDescriptor = {
       group: 'core.platform-mesh.io',
       version: 'v1alpha1',
@@ -78,34 +76,12 @@ export class PMAuthConfigProvider implements AuthConfigService {
         {
           organization: orgName,
         },
+        orgName === 'welcome' ? 'root:platform-mesh-system' : undefined,
       );
-    return result.status.managedClients[orgName].clientId;
-  }
 
-  private async getWelcomeClientSecret(orgName: string) {
-    const secretName = `portal-client-secret-${orgName}`;
-    const namespace = 'platform-mesh-system';
-
-    const kc = new KubeConfig();
-    kc.loadFromDefault();
-    const k8sApi = kc.makeApiClient(CoreV1Api);
-    try {
-      const res = await k8sApi.readNamespacedSecret({
-        namespace,
-        name: secretName,
-      });
-      const secretData = res.data;
-
-      return Buffer.from(
-        secretData['attribute.client_secret'],
-        'base64',
-      ).toString('utf-8');
-    } catch (err) {
-      console.error(
-        `Failed to fetch secret ${secretName}:`,
-        err.response?.body || err,
-      );
-      throw err;
-    }
+    return {
+      clientId: result.status.managedClients[orgName].clientId,
+      secretRefName: result.status.managedClients[orgName].secretRef.name,
+    };
   }
 }

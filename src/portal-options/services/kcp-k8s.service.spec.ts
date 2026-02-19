@@ -185,6 +185,21 @@ describe('KcpKubernetesService', () => {
       );
     });
 
+    it('builds URL with KCP_URL parameter when provided', () => {
+      const svc = new KcpKubernetesService();
+      process.env.KCP_URL = 'https://my.com:6676';
+
+      const req = makeReq({
+        query: { 'core_platform-mesh_io_account': 'acc-1' } as any,
+        headers: { host: 'kcp.api.example.com' } as any,
+      });
+
+      const url = svc.getKcpWorkspacePublicUrl(req);
+
+      expect(url).toBe('https://my.com:6676/clusters/root:orgs:org-1:acc-1');
+      delete process.env.KCP_URL;
+    });
+
     it('omits port for standard port 80', () => {
       const svc = new KcpKubernetesService();
       const req = makeReq({
@@ -333,6 +348,35 @@ describe('KcpKubernetesService', () => {
           middleware: expect.any(Array),
         }),
       );
+    });
+
+    it('executes post middleware', async () => {
+      const svc = new KcpKubernetesService();
+      const gvr: K8sResourceDescriptor = {
+        group: 'apps',
+        version: 'v1',
+        plural: 'deployments',
+        name: 'my-deployment',
+      };
+      const context: K8sRequestContext = {
+        organization: 'org1',
+        'core_platform-mesh_io_account': 'acc1',
+      };
+
+      let postResult: any;
+      mockListClusterCustomObject.mockImplementation(async (_gvr, options) => {
+        const middleware = options.middleware[0];
+        const mockContext = {
+          setUrl: jest.fn(),
+        };
+        await middleware.options.pre(mockContext);
+        postResult = await middleware.options.post(mockContext);
+        return { data: {} };
+      });
+
+      await svc.listClusterCustomObject(gvr, context);
+
+      expect(postResult).toBeDefined();
     });
 
     it('builds correct URL path in middleware', async () => {
@@ -509,7 +553,6 @@ describe('KcpKubernetesService', () => {
   describe('getClientSecret', () => {
     it('retrieves and decodes client secret successfully', async () => {
       const svc = new KcpKubernetesService();
-      const orgName = 'test-org';
       const encodedSecret = Buffer.from('my-secret-value').toString('base64');
 
       mockReadNamespacedSecret.mockResolvedValue({
@@ -518,7 +561,9 @@ describe('KcpKubernetesService', () => {
         },
       });
 
-      const result = await svc.getClientSecret(orgName);
+      const result = await svc.getClientSecret(
+        'portal-client-secret-test-org-test-org',
+      );
 
       expect(result).toBe('my-secret-value');
       expect(mockReadNamespacedSecret).toHaveBeenCalledWith(
@@ -534,7 +579,6 @@ describe('KcpKubernetesService', () => {
 
     it('builds correct secret name and namespace', async () => {
       const svc = new KcpKubernetesService();
-      const orgName = 'my-company';
 
       mockReadNamespacedSecret.mockResolvedValue({
         data: {
@@ -542,7 +586,7 @@ describe('KcpKubernetesService', () => {
         },
       });
 
-      await svc.getClientSecret(orgName);
+      await svc.getClientSecret('portal-client-secret-my-company-my-company');
 
       expect(mockReadNamespacedSecret).toHaveBeenCalledWith(
         {
@@ -555,7 +599,6 @@ describe('KcpKubernetesService', () => {
 
     it('uses correct workspace URL in middleware', async () => {
       const svc = new KcpKubernetesService();
-      const orgName = 'url-org';
 
       let capturedContext: any;
       mockReadNamespacedSecret.mockImplementation(async (params, options) => {
@@ -572,11 +615,35 @@ describe('KcpKubernetesService', () => {
         };
       });
 
-      await svc.getClientSecret(orgName);
+      await svc.getClientSecret('portal-client-secret-url-org-url-org');
 
       expect(capturedContext.setUrl).toHaveBeenCalledWith(
         'https://kcp.example.com/clusters/root:orgs/api/v1/namespaces/default/secrets/portal-client-secret-url-org-url-org',
       );
+    });
+
+    it('executes post middleware', async () => {
+      const svc = new KcpKubernetesService();
+      const orgName = 'post-org';
+
+      let postResult: any;
+      mockReadNamespacedSecret.mockImplementation(async (_params, options) => {
+        const middleware = options.middleware[0];
+        const mockContext = {
+          setUrl: jest.fn(),
+        };
+        await middleware.options.pre(mockContext);
+        postResult = await middleware.options.post(mockContext);
+        return {
+          data: {
+            client_secret: Buffer.from('test').toString('base64'),
+          },
+        };
+      });
+
+      await svc.getClientSecret(orgName);
+
+      expect(postResult).toBeDefined();
     });
 
     it('throws error when secret retrieval fails', async () => {

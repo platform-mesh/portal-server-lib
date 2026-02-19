@@ -84,8 +84,13 @@ export class KcpKubernetesService {
     );
   }
 
-  getKcpWorkspaceUrl(organization?: string, account?: string) {
-    const path = this.buildWorkspacePath(organization, account);
+  getKcpWorkspaceUrl(
+    organization?: string,
+    account?: string,
+    workspacePath?: string,
+  ) {
+    const path =
+      workspacePath || this.buildWorkspacePath(organization, account);
     return new URL(`${this.baseUrl.origin}/clusters/${path}`);
   }
 
@@ -94,9 +99,13 @@ export class KcpKubernetesService {
     const account = request.query?.['core_platform-mesh_io_account'];
     const path = this.buildWorkspacePath(organization, account);
 
+    const kcpUrl = process.env.KCP_URL || '';
+    if (kcpUrl) {
+      return `${kcpUrl}/clusters/${path}`;
+    }
+
     const baseDomain = process.env.BASE_DOMAINS_DEFAULT;
     const port = this.getAppPort(request);
-
     return `https://kcp.api.${baseDomain}${port}/clusters/${path}`;
   }
 
@@ -117,6 +126,7 @@ export class KcpKubernetesService {
   public async listClusterCustomObject(
     gvr: K8sResourceDescriptor,
     requestContext: K8sRequestContext,
+    workspacePath?: string,
   ) {
     return await this.k8sCustomObjectsApi.listClusterCustomObject(gvr, {
       middleware: [
@@ -129,6 +139,7 @@ export class KcpKubernetesService {
             const kcpUrl = this.getKcpWorkspaceUrl(
               requestContext.organization,
               accountPath,
+              workspacePath,
             );
             const path = `${kcpUrl}/apis/${gvr.group}/${gvr.version}/${gvr.plural}/${gvr.name}`;
             this.logger.log(`kcp url: ${path}`);
@@ -171,8 +182,7 @@ export class KcpKubernetesService {
     });
   }
 
-  public async getClientSecret(orgName: string) {
-    const secretName = `portal-client-secret-${orgName}-${orgName}`;
+  public async getClientSecret(secretName: string) {
     const namespace = 'default';
 
     try {

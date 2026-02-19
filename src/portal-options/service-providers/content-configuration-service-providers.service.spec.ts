@@ -70,19 +70,21 @@ describe('ContentConfigurationServiceProvidersService', () => {
   it('returns parsed content configurations', async () => {
     mockClient.request.mockResolvedValue({
       ui_platform_mesh_io: {
-        ContentConfigurations: {
-          items: [
-            {
-              metadata: {
-                name: 'conf1',
-                labels: { 'ui.platform-mesh.io/entity': 'entity' },
+        v1alpha1: {
+          ContentConfigurations: {
+            items: [
+              {
+                metadata: {
+                  name: 'conf1',
+                  labels: { 'ui.platform-mesh.io/entity': 'entity' },
+                },
+                spec: { remoteConfiguration: { url: 'http://remote' } },
+                status: {
+                  configurationResult: JSON.stringify({ url: 'http://parsed' }),
+                },
               },
-              spec: { remoteConfiguration: { url: 'http://remote' } },
-              status: {
-                configurationResult: JSON.stringify({ url: 'http://parsed' }),
-              },
-            },
-          ],
+            ],
+          },
         },
       },
     });
@@ -99,17 +101,19 @@ describe('ContentConfigurationServiceProvidersService', () => {
   it('falls back to spec.remoteConfiguration.url if missing in parsed config', async () => {
     mockClient.request.mockResolvedValue({
       ui_platform_mesh_io: {
-        ContentConfigurations: {
-          items: [
-            {
-              metadata: {
-                name: 'conf1',
-                labels: { 'ui.platform-mesh.io/entity': 'entity' },
+        v1alpha1: {
+          ContentConfigurations: {
+            items: [
+              {
+                metadata: {
+                  name: 'conf1',
+                  labels: { 'ui.platform-mesh.io/entity': 'entity' },
+                },
+                spec: { remoteConfiguration: { url: 'http://remote' } },
+                status: { configurationResult: JSON.stringify({}) },
               },
-              spec: { remoteConfiguration: { url: 'http://remote' } },
-              status: { configurationResult: JSON.stringify({}) },
-            },
-          ],
+            ],
+          },
         },
       },
     });
@@ -126,17 +130,19 @@ describe('ContentConfigurationServiceProvidersService', () => {
   it('throws on missing configurationResult', async () => {
     mockClient.request.mockResolvedValue({
       ui_platform_mesh_io: {
-        ContentConfigurations: {
-          items: [
-            {
-              metadata: {
-                name: 'conf1',
-                labels: { 'ui.platform-mesh.io/entity': 'entity' },
+        v1alpha1: {
+          ContentConfigurations: {
+            items: [
+              {
+                metadata: {
+                  name: 'conf1',
+                  labels: { 'ui.platform-mesh.io/entity': 'entity' },
+                },
+                spec: { remoteConfiguration: { url: 'http://remote' } },
+                status: {},
               },
-              spec: { remoteConfiguration: { url: 'http://remote' } },
-              status: {},
-            },
-          ],
+            ],
+          },
         },
       },
     });
@@ -165,26 +171,30 @@ describe('ContentConfigurationServiceProvidersService', () => {
     context.accountPath = 'acc1';
     mockClient.request.mockResolvedValue({
       ui_platform_mesh_io: {
-        ContentConfigurations: {
-          items: [
-            {
-              metadata: {
-                name: 'conf1',
-                labels: { 'ui.platform-mesh.io/entity': 'entity' },
-              },
-              spec: { remoteConfiguration: { url: 'http://remote' } },
-              status: {
-                configurationResult: JSON.stringify({
-                  name: 'test-config',
-                  luigiConfigFragment: {
-                    data: {
-                      nodes: [{ entityType: 'core_platform-mesh_io_account' }],
+        v1alpha1: {
+          ContentConfigurations: {
+            items: [
+              {
+                metadata: {
+                  name: 'conf1',
+                  labels: { 'ui.platform-mesh.io/entity': 'entity' },
+                },
+                spec: { remoteConfiguration: { url: 'http://remote' } },
+                status: {
+                  configurationResult: JSON.stringify({
+                    name: 'test-config',
+                    luigiConfigFragment: {
+                      data: {
+                        nodes: [
+                          { entityType: 'core_platform-mesh_io_account' },
+                        ],
+                      },
                     },
-                  },
-                }),
+                  }),
+                },
               },
-            },
-          ],
+            ],
+          },
         },
       },
     });
@@ -205,26 +215,30 @@ describe('ContentConfigurationServiceProvidersService', () => {
     context.accountPath = 'acc1:acc2:acc3';
     mockClient.request.mockResolvedValue({
       ui_platform_mesh_io: {
-        ContentConfigurations: {
-          items: [
-            {
-              metadata: {
-                name: 'conf1',
-                labels: { 'ui.platform-mesh.io/entity': 'entity' },
-              },
-              spec: { remoteConfiguration: { url: 'http://remote' } },
-              status: {
-                configurationResult: JSON.stringify({
-                  name: 'test-config',
-                  luigiConfigFragment: {
-                    data: {
-                      nodes: [{ entityType: 'core_platform-mesh_io_account' }],
+        v1alpha1: {
+          ContentConfigurations: {
+            items: [
+              {
+                metadata: {
+                  name: 'conf1',
+                  labels: { 'ui.platform-mesh.io/entity': 'entity' },
+                },
+                spec: { remoteConfiguration: { url: 'http://remote' } },
+                status: {
+                  configurationResult: JSON.stringify({
+                    name: 'test-config',
+                    luigiConfigFragment: {
+                      data: {
+                        nodes: [
+                          { entityType: 'core_platform-mesh_io_account' },
+                        ],
+                      },
                     },
-                  },
-                }),
+                  }),
+                },
               },
-            },
-          ],
+            ],
+          },
         },
       },
     });
@@ -247,37 +261,39 @@ describe('ContentConfigurationServiceProvidersService', () => {
     context.accountPath = 'acc1';
     mockClient.request.mockResolvedValue({
       ui_platform_mesh_io: {
-        ContentConfigurations: {
-          items: [
-            {
-              metadata: {
-                name: 'accounts-config',
-                labels: { 'ui.platform-mesh.io/entity': 'entity' },
-              },
-              spec: { remoteConfiguration: { url: 'http://remote' } },
-              status: {
-                configurationResult: JSON.stringify({
-                  name: 'accounts',
-                  luigiConfigFragment: {
-                    data: {
-                      nodes: [
-                        {
-                          entityType: 'core_platform-mesh_io_account',
-                          children: [
-                            {
-                              defineEntity: { id: 'old-id' },
-                              context: {},
-                              pathSegment: 'old-path',
-                            },
-                          ],
-                        },
-                      ],
+        v1alpha1: {
+          ContentConfigurations: {
+            items: [
+              {
+                metadata: {
+                  name: 'accounts-config',
+                  labels: { 'ui.platform-mesh.io/entity': 'entity' },
+                },
+                spec: { remoteConfiguration: { url: 'http://remote' } },
+                status: {
+                  configurationResult: JSON.stringify({
+                    name: 'accounts',
+                    luigiConfigFragment: {
+                      data: {
+                        nodes: [
+                          {
+                            entityType: 'core_platform-mesh_io_account',
+                            children: [
+                              {
+                                defineEntity: { id: 'old-id' },
+                                context: {},
+                                pathSegment: 'old-path',
+                              },
+                            ],
+                          },
+                        ],
+                      },
                     },
-                  },
-                }),
+                  }),
+                },
               },
-            },
-          ],
+            ],
+          },
         },
       },
     });
@@ -299,26 +315,30 @@ describe('ContentConfigurationServiceProvidersService', () => {
   it('does not apply processContentConfigurationForAccountHierarchy when accountPath is not provided', async () => {
     mockClient.request.mockResolvedValue({
       ui_platform_mesh_io: {
-        ContentConfigurations: {
-          items: [
-            {
-              metadata: {
-                name: 'conf1',
-                labels: { 'ui.platform-mesh.io/entity': 'entity' },
-              },
-              spec: { remoteConfiguration: { url: 'http://remote' } },
-              status: {
-                configurationResult: JSON.stringify({
-                  name: 'test-config',
-                  luigiConfigFragment: {
-                    data: {
-                      nodes: [{ entityType: 'core_platform-mesh_io_account' }],
+        v1alpha1: {
+          ContentConfigurations: {
+            items: [
+              {
+                metadata: {
+                  name: 'conf1',
+                  labels: { 'ui.platform-mesh.io/entity': 'entity' },
+                },
+                spec: { remoteConfiguration: { url: 'http://remote' } },
+                status: {
+                  configurationResult: JSON.stringify({
+                    name: 'test-config',
+                    luigiConfigFragment: {
+                      data: {
+                        nodes: [
+                          { entityType: 'core_platform-mesh_io_account' },
+                        ],
+                      },
                     },
-                  },
-                }),
+                  }),
+                },
               },
-            },
-          ],
+            ],
+          },
         },
       },
     });

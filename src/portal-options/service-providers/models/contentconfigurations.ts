@@ -1,5 +1,5 @@
 export interface ContentConfigurationQueryResponse {
-  ui_platform_mesh_io: ContentConfigurationsResponse;
+  ui_platform_mesh_io: { v1alpha1: ContentConfigurationsResponse };
 }
 
 export interface ContentConfigurationsResponse {
