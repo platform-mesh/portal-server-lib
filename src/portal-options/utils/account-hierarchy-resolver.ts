@@ -1,3 +1,4 @@
+import { replaceStringDeep } from './replace-string-deep.js';
 import { ContentConfiguration } from '@openmfp/portal-server-lib';
 
 const ACCOUNT_ENTITY_TYPE = 'core_platform-mesh_io_account';
@@ -13,7 +14,7 @@ export const updateEntityTypeFromAccountPath = (
 
     const accountPathParts = accountPath
       .split(':')
-      .map((_, i) => `${ACCOUNT_ENTITY_TYPE}:${i + 1}`)
+      .map(() => ACCOUNT_ENTITY_TYPE)
       .join('.');
 
     node.entityType = node.entityType.replace(
@@ -31,15 +32,17 @@ export const updateAccountNodeChildren = (
 ): ContentConfiguration => {
   const accountChildrenNode =
     contentConfiguration.luigiConfigFragment.data.nodes[0]?.children?.[0];
-  const nextHierarchyLevel = accountPath.split(':').length + 1;
 
   if (accountChildrenNode) {
-    accountChildrenNode.defineEntity.id = `${ACCOUNT_ENTITY_TYPE}:${nextHierarchyLevel}`;
-    accountChildrenNode.context.accountId = `:${ACCOUNT_ENTITY_TYPE}Id:${nextHierarchyLevel}`;
-    accountChildrenNode.context[`${ACCOUNT_ENTITY_TYPE}Id`] =
-      `:${ACCOUNT_ENTITY_TYPE}Id:${nextHierarchyLevel}`;
-    accountChildrenNode.context.resourceId = `:${ACCOUNT_ENTITY_TYPE}Id:${nextHierarchyLevel}`;
-    accountChildrenNode.pathSegment = `:${ACCOUNT_ENTITY_TYPE}Id:${nextHierarchyLevel}`;
+    const nextHierarchyLevel = accountPath.split(':').length + 1;
+    const previousPathSegment = accountChildrenNode.pathSegment;
+    const nextPathSegment = `:${ACCOUNT_ENTITY_TYPE}Id:${nextHierarchyLevel}`;
+
+    replaceStringDeep(
+      accountChildrenNode,
+      previousPathSegment,
+      nextPathSegment,
+    );
   }
 
   return contentConfiguration;

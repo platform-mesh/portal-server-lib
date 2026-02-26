@@ -31,7 +31,7 @@ describe('updateEntityTypeFromAccountPath', () => {
     const result = updateEntityTypeFromAccountPath(config, 'acc1');
 
     expect(result.luigiConfigFragment.data.nodes[0].entityType).toBe(
-      'core_platform-mesh_io_account:1',
+      'core_platform-mesh_io_account',
     );
   });
 
@@ -47,7 +47,7 @@ describe('updateEntityTypeFromAccountPath', () => {
     const result = updateEntityTypeFromAccountPath(config, 'acc1:acc2:acc3');
 
     expect(result.luigiConfigFragment.data.nodes[0].entityType).toBe(
-      'core_platform-mesh_io_account:1.core_platform-mesh_io_account:2.core_platform-mesh_io_account:3',
+      'core_platform-mesh_io_account.core_platform-mesh_io_account.core_platform-mesh_io_account',
     );
   });
 
@@ -66,10 +66,10 @@ describe('updateEntityTypeFromAccountPath', () => {
     const result = updateEntityTypeFromAccountPath(config, 'acc1:acc2');
 
     expect(result.luigiConfigFragment.data.nodes[0].entityType).toBe(
-      'core_platform-mesh_io_account:1.core_platform-mesh_io_account:2',
+      'core_platform-mesh_io_account.core_platform-mesh_io_account',
     );
     expect(result.luigiConfigFragment.data.nodes[1].entityType).toBe(
-      'core_platform-mesh_io_account:1.core_platform-mesh_io_account:2',
+      'core_platform-mesh_io_account.core_platform-mesh_io_account',
     );
   });
 
@@ -128,17 +128,143 @@ describe('updateAccountNodeChildren', () => {
     const childNode = result.luigiConfigFragment.data.nodes[0]
       .children?.[0] as any;
 
-    expect(childNode.defineEntity.id).toBe('core_platform-mesh_io_account:2');
-    expect(childNode.context.accountId).toBe(
-      ':core_platform-mesh_io_accountId:2',
-    );
-    expect(childNode.context['core_platform-mesh_io_accountId']).toBe(
-      ':core_platform-mesh_io_accountId:2',
-    );
-    expect(childNode.context.resourceId).toBe(
-      ':core_platform-mesh_io_accountId:2',
-    );
+    expect(childNode.defineEntity.id).toBe('old-id');
     expect(childNode.pathSegment).toBe(':core_platform-mesh_io_accountId:2');
+  });
+
+  it('should replace all additional fields equal to previous pathSegment', () => {
+    const oldPathSegment = ':core_platform-mesh_io_accountId';
+    const config = createMockContentConfiguration({
+      luigiConfigFragment: {
+        data: {
+          nodes: [
+            {
+              children: [
+                {
+                  defineEntity: {
+                    id: 'old-id',
+                    contextKey: oldPathSegment,
+                    additionalContextKeys: [oldPathSegment],
+                  } as any,
+                  context: {
+                    accountId: oldPathSegment,
+                    customPath: oldPathSegment,
+                    nested: [{ deepPath: oldPathSegment }],
+                  },
+                  pathSegment: oldPathSegment,
+                  navHeader: {
+                    label: oldPathSegment,
+                  },
+                },
+              ],
+            },
+          ],
+        },
+      },
+    });
+
+    const result = updateAccountNodeChildren(config, 'acc1');
+    const childNode = result.luigiConfigFragment.data.nodes[0]
+      .children?.[0] as any;
+
+    expect(childNode.pathSegment).toBe(':core_platform-mesh_io_accountId:2');
+    expect(childNode.defineEntity.contextKey).toBe(
+      ':core_platform-mesh_io_accountId:2',
+    );
+    expect(childNode.defineEntity.additionalContextKeys[0]).toBe(
+      ':core_platform-mesh_io_accountId:2',
+    );
+    expect(childNode.context.customPath).toBe(':core_platform-mesh_io_accountId:2');
+    expect(childNode.context.nested[0].deepPath).toBe(
+      ':core_platform-mesh_io_accountId:2',
+    );
+    expect(childNode.navHeader.label).toBe(':core_platform-mesh_io_accountId:2');
+  });
+
+  it('should keep defineEntity.id controlled only by explicit assignment', () => {
+    const oldPathSegment = ':core_platform-mesh_io_accountId';
+    const config = createMockContentConfiguration({
+      luigiConfigFragment: {
+        data: {
+          nodes: [
+            {
+              children: [
+                {
+                  defineEntity: {
+                    id: oldPathSegment,
+                  },
+                  context: {},
+                  pathSegment: oldPathSegment,
+                },
+              ],
+            },
+          ],
+        },
+      },
+    });
+
+    const result = updateAccountNodeChildren(config, 'acc1');
+    const childNode = result.luigiConfigFragment.data.nodes[0]
+      .children?.[0] as any;
+
+    expect(childNode.defineEntity.id).toBe(':core_platform-mesh_io_accountId:2');
+  });
+
+  it('should not replace strings that only partially match previous pathSegment', () => {
+    const oldPathSegment = ':core_platform-mesh_io_accountId';
+    const config = createMockContentConfiguration({
+      luigiConfigFragment: {
+        data: {
+          nodes: [
+            {
+              children: [
+                {
+                  defineEntity: { id: 'old-id' },
+                  context: {
+                    exact: oldPathSegment,
+                    partial: `${oldPathSegment}:suffix`,
+                  },
+                  pathSegment: oldPathSegment,
+                },
+              ],
+            },
+          ],
+        },
+      },
+    });
+
+    const result = updateAccountNodeChildren(config, 'acc1');
+    const childNode = result.luigiConfigFragment.data.nodes[0]
+      .children?.[0] as any;
+
+    expect(childNode.context.exact).toBe(':core_platform-mesh_io_accountId:2');
+    expect(childNode.context.partial).toBe(':core_platform-mesh_io_accountId:suffix');
+  });
+
+  it('should not set pathSegment when previous pathSegment is missing', () => {
+    const config = createMockContentConfiguration({
+      luigiConfigFragment: {
+        data: {
+          nodes: [
+            {
+              children: [
+                {
+                  defineEntity: { id: 'old-id' },
+                  context: {},
+                },
+              ],
+            },
+          ],
+        },
+      },
+    });
+
+    const result = updateAccountNodeChildren(config, 'acc1');
+    const childNode = result.luigiConfigFragment.data.nodes[0]
+      .children?.[0] as any;
+
+    expect(childNode.pathSegment).toBeUndefined();
+    expect(childNode.defineEntity.id).toBe('old-id');
   });
 
   it('should update children node for multi-level account path', () => {
@@ -164,10 +290,7 @@ describe('updateAccountNodeChildren', () => {
     const childNode = result.luigiConfigFragment.data.nodes[0]
       .children?.[0] as any;
 
-    expect(childNode.defineEntity.id).toBe('core_platform-mesh_io_account:4');
-    expect(childNode.context.accountId).toBe(
-      ':core_platform-mesh_io_accountId:4',
-    );
+    expect(childNode.defineEntity.id).toBe('old-id');
     expect(childNode.pathSegment).toBe(':core_platform-mesh_io_accountId:4');
   });
 
@@ -266,9 +389,9 @@ describe('processContentConfigurationForAccountHierarchy', () => {
     const childNode = result.luigiConfigFragment.data.nodes[0]
       .children?.[0] as any;
 
-    expect(childNode.defineEntity.id).toBe('core_platform-mesh_io_account:2');
+    expect(childNode.defineEntity.id).toBe('old-id');
     expect(result.luigiConfigFragment.data.nodes[0].entityType).toBe(
-      'core_platform-mesh_io_account:1',
+      'core_platform-mesh_io_account',
     );
   });
 
@@ -301,7 +424,7 @@ describe('processContentConfigurationForAccountHierarchy', () => {
 
     expect(childNode.defineEntity.id).toBe('old-id');
     expect(result.luigiConfigFragment.data.nodes[0].entityType).toBe(
-      'core_platform-mesh_io_account:1',
+      'core_platform-mesh_io_account',
     );
   });
 
@@ -320,7 +443,7 @@ describe('processContentConfigurationForAccountHierarchy', () => {
     });
 
     expect(result.luigiConfigFragment.data.nodes[0].entityType).toBe(
-      'core_platform-mesh_io_account:1.core_platform-mesh_io_account:2',
+      'core_platform-mesh_io_account.core_platform-mesh_io_account',
     );
   });
 

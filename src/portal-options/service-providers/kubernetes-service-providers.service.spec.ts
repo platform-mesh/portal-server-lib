@@ -453,7 +453,7 @@ describe('KubernetesServiceProvidersService', () => {
     expect(
       res.rawServiceProviders[0].contentConfiguration[0].luigiConfigFragment
         .data.nodes[0].entityType,
-    ).toBe('core_platform-mesh_io_account:1');
+    ).toBe('core_platform-mesh_io_account');
   });
 
   it('should apply processContentConfigurationForAccountHierarchy with multi-level accountPath', async () => {
@@ -488,7 +488,7 @@ describe('KubernetesServiceProvidersService', () => {
       res.rawServiceProviders[0].contentConfiguration[0].luigiConfigFragment
         .data.nodes[0].entityType,
     ).toBe(
-      'core_platform-mesh_io_account:1.core_platform-mesh_io_account:2.core_platform-mesh_io_account:3',
+      'core_platform-mesh_io_account.core_platform-mesh_io_account.core_platform-mesh_io_account',
     );
   });
 
@@ -535,7 +535,7 @@ describe('KubernetesServiceProvidersService', () => {
       res.rawServiceProviders[0].contentConfiguration[0].luigiConfigFragment
         .data.nodes[0].children[0];
 
-    expect(childNode.defineEntity.id).toBe('core_platform-mesh_io_account:2');
+    expect(childNode.defineEntity.id).toBe('old-id');
     expect(childNode.pathSegment).toBe(':core_platform-mesh_io_accountId:2');
   });
 
