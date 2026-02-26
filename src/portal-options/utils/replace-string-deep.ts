@@ -19,6 +19,10 @@ export const replaceStringDeep = (
   previousValue: string,
   nextValue: string,
 ): void => {
+  if (target === null || typeof target !== 'object') {
+    return;
+  }
+
   if (Array.isArray(target)) {
     target.forEach((item, index) => {
       processValue(item, previousValue, nextValue, (updatedValue) => {
@@ -30,7 +34,7 @@ export const replaceStringDeep = (
 
   Object.entries(target).forEach(([key, value]) => {
     processValue(value, previousValue, nextValue, (updatedValue) => {
-      (target as Record<string, unknown>)[key] = updatedValue;
+      target[key] = updatedValue;
     });
   });
 };

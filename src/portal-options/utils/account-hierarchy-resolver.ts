@@ -14,6 +14,7 @@ export const updateEntityTypeFromAccountPath = (
 
     const accountPathParts = accountPath
       .split(':')
+      .filter(Boolean)
       .map(() => ACCOUNT_ENTITY_TYPE)
       .join('.');
 
@@ -34,7 +35,8 @@ export const updateAccountNodeChildren = (
     contentConfiguration.luigiConfigFragment.data.nodes[0]?.children?.[0];
 
   if (accountChildrenNode) {
-    const nextHierarchyLevel = accountPath.split(':').length + 1;
+    const nextHierarchyLevel =
+      accountPath.split(':').filter(Boolean).length + 1;
     const previousPathSegment = accountChildrenNode.pathSegment;
     const nextPathSegment = `:${ACCOUNT_ENTITY_TYPE}Id:${nextHierarchyLevel}`;
 
