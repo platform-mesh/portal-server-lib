@@ -309,7 +309,7 @@ describe('ContentConfigurationServiceProvidersService', () => {
         .data.nodes[0].children[0];
 
     expect(childNode.defineEntity.id).toBe('old-id');
-    expect(childNode.pathSegment).toBe(':core_platform-mesh_io_accountId:2');
+    expect(childNode.pathSegment).toBe(':2_core_platform-mesh_io_accountId');
   });
 
   it('does not apply processContentConfigurationForAccountHierarchy when accountPath is not provided', async () => {

@@ -38,7 +38,7 @@ export const updateAccountNodeChildren = (
     const nextHierarchyLevel =
       accountPath.split(':').filter(Boolean).length + 1;
     const previousPathSegment = accountChildrenNode.pathSegment;
-    const nextPathSegment = `:${ACCOUNT_ENTITY_TYPE}Id:${nextHierarchyLevel}`;
+    const nextPathSegment = `:${nextHierarchyLevel}_${ACCOUNT_ENTITY_TYPE}Id`;
 
     replaceStringDeep(
       accountChildrenNode,
