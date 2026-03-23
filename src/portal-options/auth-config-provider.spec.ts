@@ -1,5 +1,5 @@
 import { PMAuthConfigProvider } from './auth-config-provider.js';
-import { IdentityProviderConfiguration } from './models/k8s.js';
+import { AccountInfo } from './models/k8s.js';
 import { KcpKubernetesService } from './services/kcp-k8s.service.js';
 import * as domainUtils from './utils/domain.js';
 import { HttpException, HttpStatus } from '@nestjs/common';
@@ -74,18 +74,21 @@ describe('PMAuthConfigProvider', () => {
 
   describe('getAuthConfig', () => {
     it('should return auth config for regular organization', async () => {
-      const mockIdpConfig: IdentityProviderConfiguration = {
-        status: {
-          managedClients: {
-            org1: {
-              clientId: 'client-org1',
+      const mockAccountInfo: AccountInfo = {
+        spec: {
+          oidc: {
+            issuerUrl: 'https://auth.example.com',
+            clients: {
+              org1: {
+                clientId: 'client-org1',
+              },
             },
           },
         },
-      } as IdentityProviderConfiguration;
+      };
 
       kcpKubernetesService.listClusterCustomObject.mockResolvedValue(
-        mockIdpConfig,
+        mockAccountInfo,
       );
       kcpKubernetesService.getClientSecret.mockResolvedValue('secret-org1');
 
@@ -126,18 +129,21 @@ describe('PMAuthConfigProvider', () => {
     it('should fall back to default auth URLs when OIDC discovery fails', async () => {
       discoveryService.getOIDC.mockResolvedValue(null);
 
-      const mockIdpConfig: IdentityProviderConfiguration = {
-        status: {
-          managedClients: {
-            org1: {
-              clientId: 'client-org1',
+      const mockAccountInfo: AccountInfo = {
+        spec: {
+          oidc: {
+            issuerUrl: 'https://auth.example.com',
+            clients: {
+              org1: {
+                clientId: 'client-org1',
+              },
             },
           },
         },
-      } as IdentityProviderConfiguration;
+      };
 
       kcpKubernetesService.listClusterCustomObject.mockResolvedValue(
-        mockIdpConfig,
+        mockAccountInfo,
       );
       kcpKubernetesService.getClientSecret.mockResolvedValue('secret-org1');
 
@@ -153,18 +159,21 @@ describe('PMAuthConfigProvider', () => {
       discoveryService.getOIDC.mockResolvedValue(null);
       process.env.AUTH_SERVER_URL_DEFAULT = '';
 
-      const mockIdpConfig: IdentityProviderConfiguration = {
-        status: {
-          managedClients: {
-            org1: {
-              clientId: 'client-org1',
+      const mockAccountInfo: AccountInfo = {
+        spec: {
+          oidc: {
+            issuerUrl: 'https://auth.example.com',
+            clients: {
+              org1: {
+                clientId: 'client-org1',
+              },
             },
           },
         },
-      } as IdentityProviderConfiguration;
+      };
 
       kcpKubernetesService.listClusterCustomObject.mockResolvedValue(
-        mockIdpConfig,
+        mockAccountInfo,
       );
       kcpKubernetesService.getClientSecret.mockResolvedValue('secret-org1');
 
@@ -180,18 +189,21 @@ describe('PMAuthConfigProvider', () => {
       discoveryService.getOIDC.mockResolvedValue(null);
       process.env.TOKEN_URL_DEFAULT = '';
 
-      const mockIdpConfig: IdentityProviderConfiguration = {
-        status: {
-          managedClients: {
-            org1: {
-              clientId: 'client-org1',
+      const mockAccountInfo: AccountInfo = {
+        spec: {
+          oidc: {
+            issuerUrl: 'https://auth.example.com',
+            clients: {
+              org1: {
+                clientId: 'client-org1',
+              },
             },
           },
         },
-      } as IdentityProviderConfiguration;
+      };
 
       kcpKubernetesService.listClusterCustomObject.mockResolvedValue(
-        mockIdpConfig,
+        mockAccountInfo,
       );
       kcpKubernetesService.getClientSecret.mockResolvedValue('secret-org1');
 
@@ -201,18 +213,21 @@ describe('PMAuthConfigProvider', () => {
     });
 
     it('should throw HttpException when clientId is missing', async () => {
-      const mockIdpConfig: IdentityProviderConfiguration = {
-        status: {
-          managedClients: {
-            org1: {
-              clientId: '',
+      const mockAccountInfo: AccountInfo = {
+        spec: {
+          oidc: {
+            issuerUrl: 'https://auth.example.com',
+            clients: {
+              org1: {
+                clientId: '',
+              },
             },
           },
         },
-      } as IdentityProviderConfiguration;
+      };
 
       kcpKubernetesService.listClusterCustomObject.mockResolvedValue(
-        mockIdpConfig,
+        mockAccountInfo,
       );
       kcpKubernetesService.getClientSecret.mockResolvedValue('secret-org1');
 
@@ -222,18 +237,21 @@ describe('PMAuthConfigProvider', () => {
     });
 
     it('should throw HttpException when clientSecret is missing', async () => {
-      const mockIdpConfig: IdentityProviderConfiguration = {
-        status: {
-          managedClients: {
-            org1: {
-              clientId: 'client-org1',
+      const mockAccountInfo: AccountInfo = {
+        spec: {
+          oidc: {
+            issuerUrl: 'https://auth.example.com',
+            clients: {
+              org1: {
+                clientId: 'client-org1',
+              },
             },
           },
         },
-      } as IdentityProviderConfiguration;
+      };
 
       kcpKubernetesService.listClusterCustomObject.mockResolvedValue(
-        mockIdpConfig,
+        mockAccountInfo,
       );
       kcpKubernetesService.getClientSecret.mockResolvedValue('');
 
@@ -246,18 +264,21 @@ describe('PMAuthConfigProvider', () => {
       discoveryService.getOIDC.mockResolvedValue(null);
       process.env.AUTH_SERVER_URL_DEFAULT = '';
 
-      const mockIdpConfig: IdentityProviderConfiguration = {
-        status: {
-          managedClients: {
-            org1: {
-              clientId: 'client-org1',
+      const mockAccountInfo: AccountInfo = {
+        spec: {
+          oidc: {
+            issuerUrl: 'https://auth.example.com',
+            clients: {
+              org1: {
+                clientId: 'client-org1',
+              },
             },
           },
         },
-      } as IdentityProviderConfiguration;
+      };
 
       kcpKubernetesService.listClusterCustomObject.mockResolvedValue(
-        mockIdpConfig,
+        mockAccountInfo,
       );
       kcpKubernetesService.getClientSecret.mockResolvedValue('secret-org1');
 
@@ -274,18 +295,21 @@ describe('PMAuthConfigProvider', () => {
     });
 
     it('should call getDiscoveryEndpoint with request', async () => {
-      const mockIdpConfig: IdentityProviderConfiguration = {
-        status: {
-          managedClients: {
-            org1: {
-              clientId: 'client-org1',
+      const mockAccountInfo: AccountInfo = {
+        spec: {
+          oidc: {
+            issuerUrl: 'https://auth.example.com',
+            clients: {
+              org1: {
+                clientId: 'client-org1',
+              },
             },
           },
         },
-      } as IdentityProviderConfiguration;
+      };
 
       kcpKubernetesService.listClusterCustomObject.mockResolvedValue(
-        mockIdpConfig,
+        mockAccountInfo,
       );
       kcpKubernetesService.getClientSecret.mockResolvedValue('secret-org1');
 
@@ -297,18 +321,21 @@ describe('PMAuthConfigProvider', () => {
     });
 
     it('should call getOrganization with request', async () => {
-      const mockIdpConfig: IdentityProviderConfiguration = {
-        status: {
-          managedClients: {
-            org1: {
-              clientId: 'client-org1',
+      const mockAccountInfo: AccountInfo = {
+        spec: {
+          oidc: {
+            issuerUrl: 'https://auth.example.com',
+            clients: {
+              org1: {
+                clientId: 'client-org1',
+              },
             },
           },
         },
-      } as IdentityProviderConfiguration;
+      };
 
       kcpKubernetesService.listClusterCustomObject.mockResolvedValue(
-        mockIdpConfig,
+        mockAccountInfo,
       );
       kcpKubernetesService.getClientSecret.mockResolvedValue('secret-org1');
 
@@ -318,18 +345,21 @@ describe('PMAuthConfigProvider', () => {
     });
 
     it('should call discoveryService with OIDC URL', async () => {
-      const mockIdpConfig: IdentityProviderConfiguration = {
-        status: {
-          managedClients: {
-            org1: {
-              clientId: 'client-org1',
+      const mockAccountInfo: AccountInfo = {
+        spec: {
+          oidc: {
+            issuerUrl: 'https://auth.example.com',
+            clients: {
+              org1: {
+                clientId: 'client-org1',
+              },
             },
           },
         },
-      } as IdentityProviderConfiguration;
+      };
 
       kcpKubernetesService.listClusterCustomObject.mockResolvedValue(
-        mockIdpConfig,
+        mockAccountInfo,
       );
       kcpKubernetesService.getClientSecret.mockResolvedValue('secret-org1');
 
@@ -342,19 +372,22 @@ describe('PMAuthConfigProvider', () => {
   });
 
   describe('readClientId', () => {
-    it('should read client ID from identity provider configuration', async () => {
-      const mockIdpConfig: IdentityProviderConfiguration = {
-        status: {
-          managedClients: {
-            org1: {
-              clientId: 'client-org1',
+    it('should read client ID from account info', async () => {
+      const mockAccountInfo: AccountInfo = {
+        spec: {
+          oidc: {
+            issuerUrl: 'https://auth.example.com',
+            clients: {
+              org1: {
+                clientId: 'client-org1',
+              },
             },
           },
         },
-      } as IdentityProviderConfiguration;
+      };
 
       kcpKubernetesService.listClusterCustomObject.mockResolvedValue(
-        mockIdpConfig,
+        mockAccountInfo,
       );
       kcpKubernetesService.getClientSecret.mockResolvedValue('secret-org1');
 
@@ -364,8 +397,8 @@ describe('PMAuthConfigProvider', () => {
         {
           group: 'core.platform-mesh.io',
           version: 'v1alpha1',
-          plural: 'identityproviderconfigurations',
-          name: 'org1',
+          plural: 'accountinfos',
+          name: 'account',
         },
         {
           organization: 'org1',
@@ -373,15 +406,18 @@ describe('PMAuthConfigProvider', () => {
       );
     });
 
-    it('should handle missing managedClients', async () => {
-      const mockIdpConfig: IdentityProviderConfiguration = {
-        status: {
-          managedClients: {},
+    it('should handle missing oidc clients', async () => {
+      const mockAccountInfo: AccountInfo = {
+        spec: {
+          oidc: {
+            issuerUrl: 'https://auth.example.com',
+            clients: {},
+          },
         },
-      } as IdentityProviderConfiguration;
+      };
 
       kcpKubernetesService.listClusterCustomObject.mockResolvedValue(
-        mockIdpConfig,
+        mockAccountInfo,
       );
       kcpKubernetesService.getClientSecret.mockResolvedValue('secret-org1');
 
@@ -474,18 +510,21 @@ describe('PMAuthConfigProvider', () => {
         end_session_endpoint: undefined,
       } as any);
 
-      const mockIdpConfig: IdentityProviderConfiguration = {
-        status: {
-          managedClients: {
-            org1: {
-              clientId: 'client-org1',
+      const mockAccountInfo: AccountInfo = {
+        spec: {
+          oidc: {
+            issuerUrl: 'https://auth.example.com',
+            clients: {
+              org1: {
+                clientId: 'client-org1',
+              },
             },
           },
         },
-      } as IdentityProviderConfiguration;
+      };
 
       kcpKubernetesService.listClusterCustomObject.mockResolvedValue(
-        mockIdpConfig,
+        mockAccountInfo,
       );
       kcpKubernetesService.getClientSecret.mockResolvedValue('secret-org1');
 
@@ -496,18 +535,21 @@ describe('PMAuthConfigProvider', () => {
     });
 
     it('should handle null clientSecret in error message', async () => {
-      const mockIdpConfig: IdentityProviderConfiguration = {
-        status: {
-          managedClients: {
-            org1: {
-              clientId: 'client-org1',
+      const mockAccountInfo: AccountInfo = {
+        spec: {
+          oidc: {
+            issuerUrl: 'https://auth.example.com',
+            clients: {
+              org1: {
+                clientId: 'client-org1',
+              },
             },
           },
         },
-      } as IdentityProviderConfiguration;
+      };
 
       kcpKubernetesService.listClusterCustomObject.mockResolvedValue(
-        mockIdpConfig,
+        mockAccountInfo,
       );
       kcpKubernetesService.getClientSecret.mockResolvedValue(null as any);
 

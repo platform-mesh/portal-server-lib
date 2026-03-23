@@ -1,5 +1,5 @@
 import {
-  IdentityProviderConfiguration,
+  AccountInfo,
   K8sResourceDescriptor,
 } from './models/k8s.js';
 import { KcpKubernetesService } from './services/kcp-k8s.service.js';
@@ -68,18 +68,18 @@ export class PMAuthConfigProvider implements AuthConfigService {
     const k8sResourceDescriptor: K8sResourceDescriptor = {
       group: 'core.platform-mesh.io',
       version: 'v1alpha1',
-      plural: 'identityproviderconfigurations',
-      name: orgName,
+      plural: 'accountinfos',
+      name: 'account',
     };
 
-    const result: IdentityProviderConfiguration =
+    const result: AccountInfo =
       await this.kcpKubernetesService.listClusterCustomObject(
         k8sResourceDescriptor,
         {
           organization: orgName,
         },
       );
-    return result.status.managedClients[orgName].clientId;
+    return result.spec.oidc.clients[orgName].clientId;
   }
 
   private async getWelcomeClientSecret(orgName: string) {

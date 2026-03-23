@@ -12,14 +12,13 @@ export interface K8sRequestContext extends Record<string, any> {
   'core_platform-mesh_io_account'?: string;
 }
 
-export interface IdentityProviderConfiguration {
-  status: {
-    managedClients: {
-      [key: string]: {
-        clientId: string;
-        secretRef?: {
-          name: string;
-          namespace: string;
+export interface AccountInfo {
+  spec: {
+    oidc?: {
+      issuerUrl: string;
+      clients: {
+        [key: string]: {
+          clientId: string;
         };
       };
     };
