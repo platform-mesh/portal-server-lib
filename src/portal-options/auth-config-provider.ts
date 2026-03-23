@@ -70,13 +70,18 @@ export class PMAuthConfigProvider implements AuthConfigService {
       name: orgName,
     };
 
+    // IDP resources for 'welcome' are in root:platform-mesh-system,
+    // for regular orgs they are in root:orgs
+    const workspacePath =
+      orgName === 'welcome' ? 'root:platform-mesh-system' : 'root:orgs';
+
     const result: IdentityProviderConfiguration =
       await this.kcpKubernetesService.listClusterCustomObject(
         k8sResourceDescriptor,
         {
           organization: orgName,
         },
-        orgName === 'welcome' ? 'root:platform-mesh-system' : undefined,
+        workspacePath,
       );
 
     return {

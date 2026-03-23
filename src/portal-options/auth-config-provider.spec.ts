@@ -102,6 +102,19 @@ describe('PMAuthConfigProvider', () => {
         oidcIssuerUrl: 'https://auth.example.com',
         endSessionUrl: 'https://auth.example.com/logout',
       });
+      expect(kcpKubernetesService.listClusterCustomObject).toHaveBeenCalledWith(
+        {
+          group: 'core.platform-mesh.io',
+          version: 'v1alpha1',
+          plural: 'identityproviderconfigurations',
+          name: 'org1',
+        },
+        { organization: 'org1' },
+        'root:orgs',
+      );
+      expect(kcpKubernetesService.getClientSecret).toHaveBeenCalledWith(
+        'secret-org1',
+      );
     });
 
     it('should handle welcome organization', async () => {
@@ -111,21 +124,21 @@ describe('PMAuthConfigProvider', () => {
         status: {
           managedClients: {
             welcome: {
-              clientId: 'welcome',
-              secretRef: { name: 'secret-org1-welcome', namespace: 'default' },
+              clientId: 'client-welcome',
+              secretRef: { name: 'secret-welcome', namespace: 'default' },
             },
           },
         },
-      } as IdentityProviderConfiguration;
+      };
       kcpKubernetesService.listClusterCustomObject.mockResolvedValue(
         mockIdpConfig,
       );
-      kcpKubernetesService.getClientSecret.mockResolvedValue('secret-org1');
+      kcpKubernetesService.getClientSecret.mockResolvedValue('secret-welcome');
 
       const result = await provider.getAuthConfig(mockRequest);
 
-      expect(result.clientId).toBe('welcome');
-      expect(result.clientSecret).toBe('secret-org1');
+      expect(result.clientId).toBe('client-welcome');
+      expect(result.clientSecret).toBe('secret-welcome');
       expect(kcpKubernetesService.listClusterCustomObject).toHaveBeenCalledWith(
         {
           group: 'core.platform-mesh.io',
@@ -135,6 +148,9 @@ describe('PMAuthConfigProvider', () => {
         },
         { organization: 'welcome' },
         'root:platform-mesh-system',
+      );
+      expect(kcpKubernetesService.getClientSecret).toHaveBeenCalledWith(
+        'secret-welcome',
       );
     });
 
@@ -395,7 +411,7 @@ describe('PMAuthConfigProvider', () => {
         {
           organization: 'org1',
         },
-        undefined,
+        'root:orgs',
       );
     });
 
