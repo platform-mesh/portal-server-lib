@@ -1,4 +1,5 @@
-name: pipe
+name: ci
+
 on:
   push:
     branches:
@@ -8,13 +9,52 @@ on:
       - opened
       - synchronize
 
+permissions:
+  contents: write
+  id-token: write
+
 concurrency:
   group: ${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  pipe:
-    uses: platform-mesh/.github/.github/workflows/pipeline-node-module.yml@main
+  # ──────────────────────────────────────────────
+  # Always-run jobs (PR + main)
+  # ──────────────────────────────────────────────
+  build:
+    uses: platform-mesh/.github/.github/workflows/job-node-test.yml@main
+    secrets: inherit
+
+  # ──────────────────────────────────────────────
+  # Quality gate (aggregates required checks)
+  # ──────────────────────────────────────────────
+  quality-gate:
+    if: always()
+    permissions: {}
+    needs: [build]
+    runs-on: ubuntu-latest
+    timeout-minutes: 1
+    steps:
+      - name: Check results
+        run: |
+          if [[ "${{ needs.build.result }}" != "success" ]]; then
+            echo "build failed"
+            exit 1
+          fi
+
+  # ──────────────────────────────────────────────
+  # Release jobs (main branch only)
+  # ──────────────────────────────────────────────
+  create-version:
+    if: github.ref == 'refs/heads/main'
+    uses: platform-mesh/.github/.github/workflows/job-create-version.yml@main
+    secrets: inherit
+
+  publish:
+    if: github.ref == 'refs/heads/main'
+    needs: [create-version, build]
+    uses: platform-mesh/.github/.github/workflows/job-node-publish.yml@main
     secrets: inherit
     with:
+      version: ${{ needs.create-version.outputs.strictVersion }}
       environment: npmjs:@platform-mesh/portal-server-lib
