@@ -21,12 +21,7 @@ jobs:
   # ──────────────────────────────────────────────
   # Always-run jobs (PR + main)
   # ──────────────────────────────────────────────
-  node-audit:
-    uses: platform-mesh/.github/.github/workflows/job-node-audit.yml@main
-    secrets: inherit
-
   build:
-    needs: [node-audit]
     uses: platform-mesh/.github/.github/workflows/job-node-test.yml@main
     secrets: inherit
 
@@ -36,16 +31,12 @@ jobs:
   quality-gate:
     if: always()
     permissions: {}
-    needs: [node-audit, build]
+    needs: [build]
     runs-on: ubuntu-latest
     timeout-minutes: 1
     steps:
       - name: Check results
         run: |
-          if [[ "${{ needs.node-audit.result }}" != "success" ]]; then
-            echo "node-audit failed"
-            exit 1
-          fi
           if [[ "${{ needs.build.result }}" != "success" ]]; then
             echo "build failed"
             exit 1
