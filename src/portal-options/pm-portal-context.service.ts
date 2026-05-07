@@ -47,11 +47,8 @@ export class PMPortalContextService implements PortalContextProvider {
           )
         : url;
 
-    portalContext.crdGatewayApiUrl = replacePlaceholders(
-      portalContext.crdGatewayApiUrl,
-    );
-    portalContext.iamServiceApiUrl = replacePlaceholders(
-      portalContext.iamServiceApiUrl,
-    );
+    Object.keys(portalContext).map(k=> portalContext[k] = replacePlaceholders(
+      portalContext[k]
+    ))
   }
 }

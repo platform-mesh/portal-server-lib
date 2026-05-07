@@ -102,11 +102,15 @@ describe('PMPortalContextService', () => {
       {
         crdGatewayApiUrl:
           'https://${org-subdomain}api.example.com/${org-name}/graphql',
+        newApiUrl: 'https://${org-subdomain}example.com/${org-name}/service'
       },
     );
 
     expect(result.crdGatewayApiUrl).toBe(
       'https://test-org.api.example.com/test-org/graphql',
+    );
+    expect(result.newApiUrl).toBe(
+      'https://test-org.example.com/test-org/service',
     );
   });
 
