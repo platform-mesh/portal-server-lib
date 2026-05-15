@@ -4,7 +4,7 @@ This library helps you to set up the backend application using @openmfp/portal-s
 in the scope of the Platform Mesh functionalities.
 
 [![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/platform-mesh/portal-server-lib/badge)](https://scorecard.dev/viewer/?uri=github.com/platform-mesh/portal-server-lib)
-![Build Status](https://github.com/platform-mesh/portal-server-lib/actions/workflows/pipeline.yaml/badge.svg)
+![Build Status](https://github.com/platform-mesh/portal-server-lib/actions/workflows/ci.yml/badge.svg)
 
 ## Project setup
 
