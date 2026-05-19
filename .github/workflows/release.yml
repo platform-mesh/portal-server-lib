@@ -6,8 +6,7 @@ on:
       - main
 
 permissions:
-  contents: write
-  id-token: write
+  contents: read
 
 concurrency:
   group: release-${{ github.ref }}
@@ -15,17 +14,22 @@ concurrency:
 
 jobs:
   build:
-    uses: platform-mesh/.github/.github/workflows/job-node-test.yml@main
+    uses: platform-mesh/.github/.github/workflows/job-node-test.yml@9ddacafbe3260312cb1cc3f9974ad2fece8effe0
     secrets: inherit
 
   create-version:
-    uses: platform-mesh/.github/.github/workflows/job-create-version.yml@main
+    uses: platform-mesh/.github/.github/workflows/job-create-version.yml@9ddacafbe3260312cb1cc3f9974ad2fece8effe0
     secrets: inherit
+    permissions:
+      contents: write
 
   publish:
     needs: [create-version, build]
-    uses: platform-mesh/.github/.github/workflows/job-node-publish.yml@main
+    uses: platform-mesh/.github/.github/workflows/job-node-publish.yml@9ddacafbe3260312cb1cc3f9974ad2fece8effe0
     secrets: inherit
+    permissions:
+      contents: write
+      id-token: write
     with:
       version: ${{ needs.create-version.outputs.strictVersion }}
       environment: npmjs:@platform-mesh/portal-server-lib

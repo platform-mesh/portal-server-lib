@@ -15,7 +15,7 @@ concurrency:
 
 jobs:
   build:
-    uses: platform-mesh/.github/.github/workflows/job-node-test.yml@main
+    uses: platform-mesh/.github/.github/workflows/job-node-test.yml@9ddacafbe3260312cb1cc3f9974ad2fece8effe0
     secrets: inherit
 
   quality-gate:
