@@ -1,8 +1,3 @@
-import { RequestContext } from '../pm-request-context-provider.js';
-import { processContentConfigurationForAccountHierarchy } from '../utils/account-hierarchy-resolver.js';
-import { contentConfigurationsQuery } from './contentconfigurations-query.js';
-import { ContentConfigurationQueryResponse } from './models/contentconfigurations.js';
-import { welcomeNodeConfig } from './models/welcome-node-config.js';
 import { Injectable } from '@nestjs/common';
 import {
   ContentConfiguration,
@@ -10,9 +5,17 @@ import {
   ServiceProviderService,
 } from '@openmfp/portal-server-lib';
 import { GraphQLClient } from 'graphql-request';
+import { RequestContext } from '../pm-request-context-provider.js';
+import { PermissionsProxyService } from '../services/permissions/permissions-proxy.service.js';
+import { processContentConfigurationForAccountHierarchy } from '../utils/account-hierarchy-resolver.js';
+import { contentConfigurationsQuery } from './contentconfigurations-query.js';
+import { ContentConfigurationQueryResponse } from './models/contentconfigurations.js';
+import { welcomeNodeConfig } from './models/welcome-node-config.js';
 
 @Injectable()
 export class ContentConfigurationServiceProvidersService implements ServiceProviderService {
+  constructor(private permissionsProxyService: PermissionsProxyService) {}
+
   async getServiceProviders(
     token: string,
     entities: string[],
@@ -31,7 +34,7 @@ export class ContentConfigurationServiceProvidersService implements ServiceProvi
       throw new Error('Context with organization is required');
     }
 
-    let url = context.crdGatewayApiUrl.replace(
+    let url = context.crdGatewayApiUrl!.replace(
       'kubernetes-graphql-gateway/root',
       'kubernetes-graphql-gateway/virtual-workspace/contentconfigurations/root',
     );
@@ -112,6 +115,13 @@ export class ContentConfigurationServiceProvidersService implements ServiceProvi
             }
           });
 
+      const nodesPermissions = await this.permissionsProxyService.resolvePermissions(
+        token,
+        context.user,
+        accountPath,
+        contentConfigurations,
+      );
+
       return {
         rawServiceProviders: [
           {
@@ -119,6 +129,7 @@ export class ContentConfigurationServiceProvidersService implements ServiceProvi
             displayName: '',
             creationTimestamp: '',
             contentConfiguration: contentConfigurations,
+            nodeContext: { nodesPermissions },
           },
         ],
       };
