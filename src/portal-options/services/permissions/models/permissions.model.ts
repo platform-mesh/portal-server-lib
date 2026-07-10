@@ -1,7 +1,8 @@
 export interface AuthorizationRequest {
-  userId: string;
+  token: string;
+  organization: string;
   accountPath: string;
-  checks: { resource: string; actions: string[] | 'All' }[];
+  checks: { resource: string; apiGroup: string; actions: string[] | 'All' }[];
 }
 
 export interface Permission {
@@ -10,7 +11,6 @@ export interface Permission {
 }
 
 export interface AuthorizationResponse {
-  userId: string;
   accountPath: string;
   permissions: Permission[];
 }

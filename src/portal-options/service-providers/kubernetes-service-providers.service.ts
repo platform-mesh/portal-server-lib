@@ -70,7 +70,7 @@ export class KubernetesServiceProvidersService implements ServiceProviderService
       context?.accountPath ?? context?.['core_platform-mesh_io_account'] ?? '';
     const nodesPermissions = await this.permissionsProxyService.resolvePermissions(
       token,
-      context.user,
+      context.organization,
       accountPath,
       contentConfigurations,
     );

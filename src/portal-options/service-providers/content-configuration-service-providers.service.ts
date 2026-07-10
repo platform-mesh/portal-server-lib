@@ -117,8 +117,8 @@ export class ContentConfigurationServiceProvidersService implements ServiceProvi
 
       const nodesPermissions = await this.permissionsProxyService.resolvePermissions(
         token,
-        context.user,
-        accountPath,
+        context.organization,
+        accountPath ?? '',
         contentConfigurations,
       );
 

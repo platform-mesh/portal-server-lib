@@ -4,6 +4,14 @@ import { ContentConfigurationServiceProvidersService } from './content-configura
 import { welcomeNodeConfig } from './models/welcome-node-config.js';
 import { GraphQLClient } from 'graphql-request';
 
+jest.mock('../services/permissions/open-fga.adapter.js', () => ({
+  OpenFgaAdapter: jest.fn().mockImplementation(() => ({ checkPermissions: jest.fn() })),
+}));
+
+jest.mock('../services/permissions/rbac.adapter.js', () => ({
+  RbacAdapter: jest.fn().mockImplementation(() => ({ checkPermissions: jest.fn() })),
+}));
+
 jest.mock('graphql-request', () => {
   return {
     GraphQLClient: jest.fn().mockImplementation(() => ({

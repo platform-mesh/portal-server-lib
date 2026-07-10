@@ -1,37 +1,29 @@
-import { AuthorizationRequest } from './permissions.model.js';
 import { ContentConfiguration } from '@openmfp/portal-server-lib';
 
-interface ResourceDefinitionLocal {
+export interface ResourceDefinitionLocal {
   entity: string;
+  apiGroup?: string;
   entityCollection?: string;
   checkActions?: string[] | 'All';
 }
 
-type CheckEntry = AuthorizationRequest['checks'][number];
-
 function collectFromNodes(
   nodes: ContentConfiguration['luigiConfigFragment']['data']['nodes'],
-  acc: Map<string, CheckEntry>,
+  acc: Map<string, ResourceDefinitionLocal>,
 ): void {
   for (const node of nodes) {
-    const rd = node.context?.['resourceDefinition'] as
-      | ResourceDefinitionLocal
-      | undefined;
+    const rd = node.context?.['resourceDefinition'] as ResourceDefinitionLocal | undefined;
 
     if (rd?.entity !== undefined && rd.checkActions !== undefined) {
-      const resource = rd.entity;
-      const existing = acc.get(resource);
+      const existing = acc.get(rd.entity);
 
-      if (rd.checkActions === 'All' || existing?.actions === 'All') {
-        acc.set(resource, { resource, actions: 'All' });
+      if (rd.checkActions === 'All' || existing?.checkActions === 'All') {
+        acc.set(rd.entity, { ...rd, checkActions: 'All' });
       } else {
         const merged = existing
-          ? [...(existing.actions as string[]), ...rd.checkActions]
+          ? [...(existing.checkActions as string[]), ...rd.checkActions]
           : [...rd.checkActions];
-        acc.set(resource, {
-          resource,
-          actions: [...new Set(merged)],
-        });
+        acc.set(rd.entity, { ...rd, checkActions: [...new Set(merged)] });
       }
     }
 
@@ -44,8 +36,8 @@ function collectFromNodes(
 
 export function extractResourceDefinitions(
   contentConfigurations: ContentConfiguration[],
-): AuthorizationRequest['checks'] {
-  const acc = new Map<string, CheckEntry>();
+): ResourceDefinitionLocal[] {
+  const acc = new Map<string, ResourceDefinitionLocal>();
 
   for (const cc of contentConfigurations) {
     const nodes = cc.luigiConfigFragment?.data?.nodes;
