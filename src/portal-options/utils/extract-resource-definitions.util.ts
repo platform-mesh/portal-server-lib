@@ -5,6 +5,7 @@ export interface ResourceDefinitionLocal {
   apiGroup?: string;
   entityCollection?: string;
   scope?: string;
+  namespace?: string | null;
   checkActions?: string[] | 'All';
 }
 

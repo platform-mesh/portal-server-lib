@@ -42,6 +42,7 @@ export class PermissionsProxyService {
         apiGroup: rd.apiGroup ?? '',
         entityCollection: rd.entityCollection ?? '',
         scope: rd.scope ?? 'Cluster',
+        namespace: rd.namespace,
         actions: rd.checkActions as string[] | 'All',
       }));
 
