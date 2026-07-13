@@ -2,7 +2,7 @@ export interface AuthorizationRequest {
   token: string;
   organization: string;
   accountPath: string;
-  checks: { resource: string; apiGroup: string; actions: string[] | 'All' }[];
+  checks: { resource: string; apiGroup: string; entityCollection: string; scope: string; actions: string[] | 'All' }[];
 }
 
 export interface Permission {

@@ -1,10 +1,13 @@
+export interface FgaTupleKey {
+  user: string;
+  relation: string;
+  object: string;
+}
+
 export interface BatchCheckTuple {
-  tuple_key: {
-    user: string;
-    relation: string;
-    object: string;
-  };
+  tuple_key: FgaTupleKey;
   correlation_id: string;
+  contextual_tuples?: { tuple_keys: FgaTupleKey[] };
 }
 
 export interface BatchCheckResult {

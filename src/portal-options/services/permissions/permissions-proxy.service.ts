@@ -40,6 +40,8 @@ export class PermissionsProxyService {
       .map((rd) => ({
         resource: rd.entity,
         apiGroup: rd.apiGroup ?? '',
+        entityCollection: rd.entityCollection ?? '',
+        scope: rd.scope ?? 'Cluster',
         actions: rd.checkActions as string[] | 'All',
       }));
 
