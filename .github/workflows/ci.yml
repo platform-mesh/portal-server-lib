@@ -16,7 +16,7 @@ concurrency:
 jobs:
   build:
     uses: platform-mesh/.github/.github/workflows/job-node-test.yml@9ddacafbe3260312cb1cc3f9974ad2fece8effe0
-    secrets: inherit
+    secrets: inherit # zizmor: ignore[secrets-inherit]
 
   quality-gate:
     if: always()
@@ -26,8 +26,10 @@ jobs:
     timeout-minutes: 1
     steps:
       - name: Check results
+        env:
+          BUILD_RESULT: ${{ needs.build.result }}
         run: |
-          if [[ "${{ needs.build.result }}" != "success" ]]; then
+          if [[ "${BUILD_RESULT}" != "success" ]]; then
             echo "build failed"
             exit 1
           fi
