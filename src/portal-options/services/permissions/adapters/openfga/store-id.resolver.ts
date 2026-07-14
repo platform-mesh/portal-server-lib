@@ -2,11 +2,11 @@ import { CustomObjectsApi, KubeConfig } from '@kubernetes/client-node';
 import { Injectable, Logger } from '@nestjs/common';
 
 const STORE_GROUP = 'core.platform-mesh.io';
-const STORE_VERSION = 'v1alpha1';
+const STORE_VERSION = process.env['STORE_CR_VERSION'] ?? 'v1alpha1';
 const STORE_PLURAL = 'stores';
 
 const ACCOUNT_INFO_GROUP = 'core.platform-mesh.io';
-const ACCOUNT_INFO_VERSION = 'v1alpha1';
+const ACCOUNT_INFO_VERSION = process.env['ACCOUNT_INFO_CR_VERSION'] ?? 'v1alpha1';
 const ACCOUNT_INFO_PLURAL = 'accountinfos';
 const ACCOUNT_INFO_NAME = 'account';
 

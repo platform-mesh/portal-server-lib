@@ -18,13 +18,13 @@ import { StoreIdResolver } from './store-id.resolver.js';
 @Injectable()
 export class OpenFgaAdapter implements IPermissionsAdapter {
   private readonly logger = new Logger(OpenFgaAdapter.name);
-  private readonly storeIdResolver = new StoreIdResolver();
   private readonly k8sVerbs = ['get', 'list', 'create', 'watch', 'delete', 'update', 'patch'];
   private readonly defaultNamespace = 'default';
 
   constructor(
     private readonly httpService: HttpService,
     private readonly apiUrl: string,
+    private readonly storeIdResolver = new StoreIdResolver(),
   ) {}
 
   async checkPermissions(req: AuthorizationRequest): Promise<AuthorizationResponse> {
