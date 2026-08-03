@@ -3,6 +3,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { randomUUID } from 'crypto';
 import { Agent } from 'https';
 import { firstValueFrom } from 'rxjs';
+import { buildWorkspacePath } from '../../utils/build-workspace-path.util.js';
 import {
   AuthorizationRequest,
   BatchAuthzItem,
@@ -42,7 +43,7 @@ export class AuthzWebhookService implements IAuthzService {
     }
 
     const user = this.extractUserEmail(req.token);
-    const clusterPath = this.buildClusterPath(req.organization, req.accountPath);
+    const clusterPath = buildWorkspacePath([req.organization, req.accountPath]);
 
     const items: BatchAuthzItem[] = [];
     const correlationMap = new Map<string, { resource: string; verb: string }>();
@@ -57,7 +58,7 @@ export class AuthzWebhookService implements IAuthzService {
           clusterPath,
           resourceAttributes: {
             verb,
-            group: 'core.platform-mesh.io',
+            group: this.mapApiGroupForTesting(check.apiGroup),
             version: check.version,
             resource: check.entityCollection.toLowerCase(),
           },
@@ -68,6 +69,8 @@ export class AuthzWebhookService implements IAuthzService {
     if (!items.length) {
       return undefined;
     }
+
+    console.log(items)
 
     const results = await this.sendBatch(items);
     if (!results) {
@@ -92,7 +95,7 @@ export class AuthzWebhookService implements IAuthzService {
     }
 
     const user = this.extractUserEmail(req.token);
-    const clusterPath = this.buildClusterPath(req.organization, req.accountPath);
+    const clusterPath = buildWorkspacePath([req.organization, req.accountPath]);
 
     const items: BatchAuthzItem[] = [];
     const correlationMap = new Map<
@@ -115,7 +118,7 @@ export class AuthzWebhookService implements IAuthzService {
           clusterPath,
           resourceAttributes: {
             verb,
-            group: check.apiGroup.replace('platform_mesh', 'platform-mesh'),
+            group: this.mapApiGroupForTesting(check.apiGroup),
             version: check.version,
             resource: check.entityCollection.toLowerCase(),
             namespace: check.namespace,
@@ -137,10 +140,14 @@ export class AuthzWebhookService implements IAuthzService {
     return this.mapToInstancePermissions(results, correlationMap);
   }
 
-  private buildClusterPath(organization: string, accountPath: string): string {
-    return accountPath
-      ? `root:orgs:${accountPath}`
-      : `root:orgs:${organization}`;
+  // TODO: TEST-ONLY — temporary apiGroup substitution. Remove once upstream
+  // sends the canonical dotted apiGroup values.
+  private mapApiGroupForTesting(apiGroup: string): string {
+    const testOverrides: Record<string, string> = {
+      core_platform_mesh_io: 'core.platform-mesh.io',
+      orchestrate_platform_mesh_io: 'orchestrate.platform-mesh.io',
+    };
+    return testOverrides[apiGroup] ?? apiGroup;
   }
 
   private extractUserEmail(token: string): string {

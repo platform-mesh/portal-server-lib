@@ -216,7 +216,7 @@ describe('AuthzWebhookService', () => {
       expect(result).toBeUndefined();
     });
 
-    it('uses accountPath for clusterPath when non-empty', async () => {
+    it('joins organization and accountPath for clusterPath when non-empty', async () => {
       httpService.post.mockReturnValue(of({ data: { results: [] } }));
 
       await service.checkActionsForResource(
@@ -224,7 +224,7 @@ describe('AuthzWebhookService', () => {
       );
 
       const body = httpService.post.mock.calls[0][1];
-      expect(body.items[0].clusterPath).toBe('root:orgs:acc1:acc2');
+      expect(body.items[0].clusterPath).toBe('root:orgs:org:acc1:acc2');
     });
 
     it('uses organization for clusterPath when accountPath is empty', async () => {
@@ -278,7 +278,7 @@ describe('AuthzWebhookService', () => {
       expect(body.items[0].user).toBe('');
     });
 
-    it('includes namespace in resourceAttributes when provided', async () => {
+    it('omits namespace and name from resourceAttributes even when provided (Tier 1 is cluster-scoped)', async () => {
       httpService.post.mockReturnValue(of({ data: { results: [] } }));
 
       await service.checkActionsForResource(
@@ -290,6 +290,7 @@ describe('AuthzWebhookService', () => {
               entityCollection: 'pods',
               version: 'v1',
               namespace: 'kube-system',
+              name: 'my-pod',
               actions: ['get'],
             },
           ],
@@ -297,7 +298,8 @@ describe('AuthzWebhookService', () => {
       );
 
       const body = httpService.post.mock.calls[0][1];
-      expect(body.items[0].resourceAttributes.namespace).toBe('kube-system');
+      expect(body.items[0].resourceAttributes.namespace).toBeUndefined();
+      expect(body.items[0].resourceAttributes.name).toBeUndefined();
     });
 
     it('omits namespace from resourceAttributes when not provided', async () => {
@@ -511,7 +513,7 @@ describe('AuthzWebhookService', () => {
       expect(result![0].actions).toContain('delete');
     });
 
-    it('uses accountPath for clusterPath when non-empty', async () => {
+    it('joins organization and accountPath for clusterPath when non-empty', async () => {
       httpService.post.mockReturnValue(of({ data: { results: [] } }));
 
       await service.checkActionsForInstance(
@@ -519,7 +521,7 @@ describe('AuthzWebhookService', () => {
       );
 
       const body = httpService.post.mock.calls[0][1];
-      expect(body.items[0].clusterPath).toBe('root:orgs:path1');
+      expect(body.items[0].clusterPath).toBe('root:orgs:org:path1');
     });
 
     it('uses organization for clusterPath when accountPath is empty', async () => {
