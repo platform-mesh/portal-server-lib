@@ -63,8 +63,34 @@ describe('PMLogoutService', () => {
     expect(httpService.post).toHaveBeenCalledWith(
       'https://keycloak/logout',
       expect.any(URLSearchParams),
-      { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } },
+      {
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        auth: { username: 'client-id', password: 'secret' },
+      },
     );
+  });
+
+  it('should not send the client secret as a form parameter', async () => {
+    const mockRequest = {} as Request;
+    const mockResponse = {} as Response;
+
+    (authConfigService.getAuthConfig as jest.Mock).mockResolvedValue({
+      clientId: 'client-id',
+      clientSecret: 'secret',
+      endSessionUrl: 'https://keycloak/logout',
+    });
+    (cookiesService.getAuthCookie as jest.Mock).mockReturnValue(
+      'refresh-token',
+    );
+    (httpService.post as jest.Mock).mockReturnValue(of({ data: {} }));
+
+    await service.handleLogout(mockRequest, mockResponse);
+
+    const body = (httpService.post as jest.Mock).mock
+      .calls[0][1] as URLSearchParams;
+    expect(body.get('refresh_token')).toBe('refresh-token');
+    expect(body.get('client_secret')).toBeNull();
+    expect(body.get('client_id')).toBeNull();
   });
 
   it('should return logoutWithIdToken URL when logout fails', async () => {
@@ -105,9 +131,39 @@ describe('PMLogoutService', () => {
     const result = (service as any).logoutWithIdToken(
       request,
       'https://kc/logout',
+      'client-id',
     );
     expect(result).toBe(
       'https://kc/logout?id_token_hint=token123&post_logout_redirect_uri=https%3A%2F%2Fexample.com',
     );
+  });
+
+  it('logoutWithIdToken should fall back to client_id when no id token is present', () => {
+    const request = {
+      query: { post_logout_redirect_uri: 'https://example.com' },
+    } as unknown as Request;
+
+    const result = (service as any).logoutWithIdToken(
+      request,
+      'https://kc/logout',
+      'client-id',
+    );
+
+    expect(result).toBe(
+      'https://kc/logout?client_id=client-id&post_logout_redirect_uri=https%3A%2F%2Fexample.com',
+    );
+    expect(result).not.toContain('id_token_hint');
+  });
+
+  it('logoutWithIdToken should omit an absent post logout redirect uri', () => {
+    const request = { query: {} } as unknown as Request;
+
+    const result = (service as any).logoutWithIdToken(
+      request,
+      'https://kc/logout',
+      'client-id',
+    );
+
+    expect(result).toBe('https://kc/logout?client_id=client-id');
   });
 });
