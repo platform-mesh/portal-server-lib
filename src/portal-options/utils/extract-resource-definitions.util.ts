@@ -6,7 +6,20 @@ export interface ResourceDefinitionLocal {
   entityCollection?: string;
   scope?: string;
   namespace?: string | null;
-  checkActions?: string[] | 'All';
+  version?: string;
+  checkActionsForResource?: string[];
+  checkActionsForInstance?: string[];
+}
+
+function mergeActions(
+  existing: string[] | undefined,
+  incoming: string[] | undefined,
+): string[] | undefined {
+  if (existing === undefined && incoming === undefined) {
+    return undefined;
+  }
+
+  return [...new Set([...(existing ?? []), ...(incoming ?? [])])];
 }
 
 function collectFromNodes(
@@ -14,19 +27,28 @@ function collectFromNodes(
   acc: Map<string, ResourceDefinitionLocal>,
 ): void {
   for (const node of nodes) {
-    const rd = node.context?.['resourceDefinition'] as ResourceDefinitionLocal | undefined;
+    const rd = node.context?.['resourceDefinition'] as
+      | ResourceDefinitionLocal
+      | undefined;
 
-    if (rd?.entity !== undefined && rd.checkActions !== undefined) {
+    if (
+      rd?.entity !== undefined &&
+      (rd.checkActionsForResource !== undefined ||
+        rd.checkActionsForInstance !== undefined)
+    ) {
       const existing = acc.get(rd.entity);
 
-      if (rd.checkActions === 'All' || existing?.checkActions === 'All') {
-        acc.set(rd.entity, { ...rd, checkActions: 'All' });
-      } else {
-        const merged = existing
-          ? [...(existing.checkActions as string[]), ...rd.checkActions]
-          : [...rd.checkActions];
-        acc.set(rd.entity, { ...rd, checkActions: [...new Set(merged)] });
-      }
+      acc.set(rd.entity, {
+        ...rd,
+        checkActionsForResource: mergeActions(
+          existing?.checkActionsForResource,
+          rd.checkActionsForResource,
+        ),
+        checkActionsForInstance: mergeActions(
+          existing?.checkActionsForInstance,
+          rd.checkActionsForInstance,
+        ),
+      });
     }
 
     const children = node.children;

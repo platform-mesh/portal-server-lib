@@ -75,6 +75,8 @@ export class KubernetesServiceProvidersService implements ServiceProviderService
       contentConfigurations,
     );
 
+    console.log(nodesPermissions);
+
     return {
       rawServiceProviders: [
         {
