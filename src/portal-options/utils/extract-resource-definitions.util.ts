@@ -8,7 +8,6 @@ export interface ResourceDefinitionLocal {
   namespace?: string | null;
   version?: string;
   checkActionsForResource?: string[];
-  checkActionsForInstance?: string[];
 }
 
 function mergeActions(
@@ -33,9 +32,7 @@ function collectFromNodes(
 
     if (
       rd?.entity !== undefined &&
-      (rd.checkActionsForResource !== undefined ||
-        rd.checkActionsForInstance !== undefined)
-    ) {
+      rd.checkActionsForResource !== undefined) {
       const existing = acc.get(rd.entity);
 
       acc.set(rd.entity, {
@@ -43,10 +40,6 @@ function collectFromNodes(
         checkActionsForResource: mergeActions(
           existing?.checkActionsForResource,
           rd.checkActionsForResource,
-        ),
-        checkActionsForInstance: mergeActions(
-          existing?.checkActionsForInstance,
-          rd.checkActionsForInstance,
         ),
       });
     }
