@@ -37,7 +37,7 @@ describe('extractResourceDefinitions', () => {
     expect(result).toEqual([]);
   });
 
-  it('ignores resourceDefinition with entity but without any action field', () => {
+  it('ignores resourceDefinition with entity but without checkActionsForResource', () => {
     const result = extractResourceDefinitions([
       makeCC([
         {
@@ -46,7 +46,6 @@ describe('extractResourceDefinitions', () => {
               entity: 'Foo',
               apiGroup: 'foo',
               entityCollection: 'foos',
-              // no checkActionsForResource, no checkActionsForInstance
             },
           },
         },
@@ -81,47 +80,6 @@ describe('extractResourceDefinitions', () => {
     });
   });
 
-  it('collects resourceDefinition with checkActionsForInstance only', () => {
-    const result = extractResourceDefinitions([
-      makeCC([
-        {
-          context: {
-            resourceDefinition: {
-              entity: 'Pod',
-              entityCollection: 'pods',
-              checkActionsForInstance: ['patch', 'delete'],
-            },
-          },
-        },
-      ]),
-    ]);
-
-    expect(result).toHaveLength(1);
-    expect(result[0].checkActionsForInstance).toEqual(['patch', 'delete']);
-    expect(result[0].checkActionsForResource).toBeUndefined();
-  });
-
-  it('collects resourceDefinition with both action fields', () => {
-    const result = extractResourceDefinitions([
-      makeCC([
-        {
-          context: {
-            resourceDefinition: {
-              entity: 'Foo',
-              entityCollection: 'foos',
-              checkActionsForResource: ['list'],
-              checkActionsForInstance: ['get'],
-            },
-          },
-        },
-      ]),
-    ]);
-
-    expect(result).toHaveLength(1);
-    expect(result[0].checkActionsForResource).toEqual(['list']);
-    expect(result[0].checkActionsForInstance).toEqual(['get']);
-  });
-
   it('merges duplicate entities across nodes with set-dedup on checkActionsForResource', () => {
     const result = extractResourceDefinitions([
       makeCC([
@@ -152,7 +110,7 @@ describe('extractResourceDefinitions', () => {
     expect(result[0].checkActionsForResource).toEqual(['get', 'list', 'delete']);
   });
 
-  it('merges duplicate entities across content configurations with set-dedup on checkActionsForInstance', () => {
+  it('merges duplicate entities across content configurations with set-dedup on checkActionsForResource', () => {
     const result = extractResourceDefinitions([
       makeCC([
         {
@@ -160,7 +118,7 @@ describe('extractResourceDefinitions', () => {
             resourceDefinition: {
               entity: 'Pod',
               entityCollection: 'pods',
-              checkActionsForInstance: ['get', 'patch'],
+              checkActionsForResource: ['get', 'patch'],
             },
           },
         },
@@ -171,7 +129,7 @@ describe('extractResourceDefinitions', () => {
             resourceDefinition: {
               entity: 'Pod',
               entityCollection: 'pods',
-              checkActionsForInstance: ['patch', 'delete'],
+              checkActionsForResource: ['patch', 'delete'],
             },
           },
         },
@@ -179,36 +137,7 @@ describe('extractResourceDefinitions', () => {
     ]);
 
     expect(result).toHaveLength(1);
-    expect(result[0].checkActionsForInstance).toEqual(['get', 'patch', 'delete']);
-  });
-
-  it('merges when one entry has resource actions and another has instance actions', () => {
-    const result = extractResourceDefinitions([
-      makeCC([
-        {
-          context: {
-            resourceDefinition: {
-              entity: 'Foo',
-              entityCollection: 'foos',
-              checkActionsForResource: ['list'],
-            },
-          },
-        },
-        {
-          context: {
-            resourceDefinition: {
-              entity: 'Foo',
-              entityCollection: 'foos',
-              checkActionsForInstance: ['get'],
-            },
-          },
-        },
-      ]),
-    ]);
-
-    expect(result).toHaveLength(1);
-    expect(result[0].checkActionsForResource).toEqual(['list']);
-    expect(result[0].checkActionsForInstance).toEqual(['get']);
+    expect(result[0].checkActionsForResource).toEqual(['get', 'patch', 'delete']);
   });
 
   it('collects resource definitions from nested children nodes', () => {

@@ -1,8 +1,8 @@
 import { HttpService } from '@nestjs/axios';
 import { Test, TestingModule } from '@nestjs/testing';
 import { of, throwError } from 'rxjs';
+import { AuthorizationRequest } from '../models/permissions.model.js';
 import { AuthzWebhookService } from './authz-webhook.service.js';
-import { AuthorizationRequest } from './models/permissions.model.js';
 
 // Build a valid JWT token with the given payload
 function makeJwt(payload: Record<string, unknown>): string {

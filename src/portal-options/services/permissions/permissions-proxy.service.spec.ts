@@ -1,6 +1,6 @@
 import { ContentConfiguration } from '@openmfp/portal-server-lib';
 import { mock } from 'jest-mock-extended';
-import { AuthzWebhookService } from './authz-webhook.service.js';
+import { AuthzWebhookService } from './adapters/authz-webhook.service.js';
 import { AuthorizationRequest, Permission } from './models/permissions.model.js';
 import { PermissionsProxyService } from './permissions-proxy.service.js';
 

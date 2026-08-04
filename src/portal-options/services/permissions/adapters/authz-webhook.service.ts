@@ -3,13 +3,8 @@ import { Injectable, Logger } from '@nestjs/common';
 import { randomUUID } from 'crypto';
 import { Agent } from 'https';
 import { firstValueFrom } from 'rxjs';
-import { buildWorkspacePath } from '../../utils/build-workspace-path.util.js';
-import {
-  AuthorizationRequest,
-  BatchAuthzItem,
-  IAuthzService,
-  Permission,
-} from './models/permissions.model.js';
+import { buildWorkspacePath } from '../../../utils/build-workspace-path.util.js';
+import { AuthorizationRequest, BatchAuthzItem, IAuthzService, Permission } from '../models/permissions.model.js';
 
 interface BatchAuthzResult {
   id: string;
@@ -70,14 +65,10 @@ export class AuthzWebhookService implements IAuthzService {
       return undefined;
     }
 
-    console.log(items)
-
     const results = await this.sendBatch(items);
     if (!results) {
       return undefined;
     }
-
-    console.log(results)
 
     const permissions = this.mapToPermissions(results, correlationMap);
     this.logger.log(
@@ -165,6 +156,7 @@ export class AuthzWebhookService implements IAuthzService {
     items: BatchAuthzItem[],
   ): Promise<Record<string, boolean> | undefined> {
     try {
+      // TODO: TLS Enablement
       const useTls = this.webhookUrl!.startsWith('https://');
       const response = await firstValueFrom(
         this.httpService.post<BatchAuthzResponse>(

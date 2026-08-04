@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { ContentConfiguration } from '@openmfp/portal-server-lib';
 import { extractResourceDefinitions } from '../../utils/extract-resource-definitions.util.js';
-import { AuthzWebhookService } from './authz-webhook.service.js';
+import { AuthzWebhookService } from './adapters/authz-webhook.service.js';
 import {
   AuthorizationRequest,
   Permission
@@ -44,8 +44,6 @@ export class PermissionsProxyService {
       accountPath,
       checks,
     };
-
-    console.log(req)
 
     return this.authzWebhook.checkActionsForResource(req);
   }

@@ -75,8 +75,6 @@ export class KubernetesServiceProvidersService implements ServiceProviderService
       contentConfigurations,
     );
 
-    console.log(nodesPermissions);
-
     return {
       rawServiceProviders: [
         {
@@ -111,7 +109,6 @@ export class KubernetesServiceProvidersService implements ServiceProviderService
 
       if (error.code == 429 || error.statusCode == 429) {
         await new Promise((resolve) => setTimeout(resolve, 1000));
-        console.log('Retry after 1 second reading kubernetes resources.');
         return await this.kcpKubernetesService.listClusterCustomObjectInKcpVirtualWorkspace(
           gvr,
           context,
