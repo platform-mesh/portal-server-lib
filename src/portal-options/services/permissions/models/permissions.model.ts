@@ -31,17 +31,20 @@ export interface AuthorizationResponse {
   permissions: Permission[];
 }
 
-// Used by both proxy calls — maps one verb to one batch item
-export interface BatchAuthzItem {
-  id: string;
-  user: string;
-  clusterPath: string; // full KCP path e.g. "root:orgs:sub:a1"
-  resourceAttributes: {
-    verb: string;
-    group: string;
-    resource: string; // plural resource name, lowercase
-    namespace?: string | null;
-    name?: string | null;
+export interface SubjectAccessReview {
+  apiVersion?: string;
+  kind?: string;
+  metadata: { name: string };
+  spec: {
+    user: string;
+    extra: Record<string, string[]>; // cluster path lives under the cluster-path key
+    resourceAttributes: {
+      verb: string;
+      group: string;
+      resource: string; // plural resource name, lowercase
+      namespace?: string | null;
+      name?: string | null;
+    };
   };
 }
 

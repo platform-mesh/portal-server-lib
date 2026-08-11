@@ -1,18 +1,17 @@
 import { HttpService } from '@nestjs/axios';
 import { Injectable, Logger } from '@nestjs/common';
 import { randomUUID } from 'crypto';
-import { Agent } from 'https';
 import { firstValueFrom } from 'rxjs';
 import { buildWorkspacePath } from '../../../utils/build-workspace-path.util.js';
-import { AuthorizationRequest, BatchAuthzItem, IAuthzService, Permission } from '../models/permissions.model.js';
+import { AuthorizationRequest, IAuthzService, Permission, SubjectAccessReview } from '../models/permissions.model.js';
+
+// Server default for the cluster-path extra key (flag --webhook-cluster-path-key,
+// see rebac-authz-webhook pkg/config/config.go).
+const CLUSTER_PATH_KEY = 'authorization.kubernetes.io/cluster-path';
 
 interface BatchAuthzResult {
   id: string;
   allowed: boolean;
-}
-
-interface BatchAuthzResponse {
-  results: BatchAuthzResult[];
 }
 
 @Injectable()
@@ -40,7 +39,7 @@ export class AuthzWebhookService implements IAuthzService {
     const user = this.extractUserEmail(req.token);
     const clusterPath = buildWorkspacePath([req.organization, req.accountPath]);
 
-    const items: BatchAuthzItem[] = [];
+    const items: SubjectAccessReview[] = [];
     const correlationMap = new Map<string, { resource: string; verb: string }>();
 
     for (const check of req.checks) {
@@ -48,13 +47,17 @@ export class AuthzWebhookService implements IAuthzService {
         const id = randomUUID();
         correlationMap.set(id, { resource: check.resource, verb });
         items.push({
-          id,
-          user,
-          clusterPath,
-          resourceAttributes: {
-            verb,
-            group: check.group,
-            resource: check.resource.toLowerCase(),
+          apiVersion: 'authorization.k8s.io/v1',
+          kind: 'SubjectAccessReview',
+          metadata: { name: id },
+          spec: {
+            user,
+            extra: { [CLUSTER_PATH_KEY]: [clusterPath] },
+            resourceAttributes: {
+              verb,
+              group: check.group,
+              resource: check.resource.toLowerCase(),
+            },
           },
         });
       }
@@ -87,7 +90,7 @@ export class AuthzWebhookService implements IAuthzService {
     const user = this.extractUserEmail(req.token);
     const clusterPath = buildWorkspacePath([req.organization, req.accountPath]);
 
-    const items: BatchAuthzItem[] = [];
+    const items: SubjectAccessReview[] = [];
     const correlationMap = new Map<
       string,
       { resource: string; namespace?: string; name?: string; verb: string }
@@ -103,16 +106,20 @@ export class AuthzWebhookService implements IAuthzService {
           verb,
         });
         items.push({
-          id,
-          user,
-          clusterPath,
-          resourceAttributes: {
-            verb,
-            group: check.group,
-            resource: check.resource.toLowerCase(),
-            // Namespaced when a namespace is present; cluster-scoped otherwise.
-            namespace: check.namespace,
-            name: check.name,
+          apiVersion: 'authorization.k8s.io/v1',
+          kind: 'SubjectAccessReview',
+          metadata: { name: id },
+          spec: {
+            user,
+            extra: { [CLUSTER_PATH_KEY]: [clusterPath] },
+            resourceAttributes: {
+              verb,
+              group: check.group,
+              resource: check.resource.toLowerCase(),
+              // Namespaced when a namespace is present; cluster-scoped otherwise.
+              namespace: check.namespace,
+              name: check.name,
+            },
           },
         });
       }
@@ -142,25 +149,20 @@ export class AuthzWebhookService implements IAuthzService {
   }
 
   private async sendBatch(
-    items: BatchAuthzItem[],
+    items: SubjectAccessReview[],
   ): Promise<Record<string, boolean> | undefined> {
     try {
-      // TODO: TLS Enablement
-      const useTls = this.webhookUrl!.startsWith('https://');
       const response = await firstValueFrom(
-        this.httpService.post<BatchAuthzResponse>(
-          `${this.webhookUrl}/batch-authz`,
-          { items },
+        this.httpService.post<BatchAuthzResult[]>(
+          `${this.webhookUrl}/batch-authz `,
+          items,
           {
             headers: { 'Content-Type': 'application/json' },
-            ...(useTls
-              ? { httpsAgent: new Agent({ rejectUnauthorized: false }) }
-              : {}),
           },
         ),
       );
 
-      const results = response.data?.results ?? [];
+      const results = Array.isArray(response.data) ? response.data : [];
       return results.reduce<Record<string, boolean>>((acc, result) => {
         acc[result.id] = result.allowed;
         return acc;
