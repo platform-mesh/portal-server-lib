@@ -4,7 +4,8 @@ import { extractResourceDefinitions } from '../../utils/extract-resource-definit
 import { AuthzWebhookService } from './adapters/authz-webhook.service.js';
 import {
   AuthorizationRequest,
-  Permission
+  Permission,
+  PermissionsDefinition,
 } from './models/permissions.model.js';
 
 @Injectable()
@@ -23,15 +24,15 @@ export class PermissionsProxyService {
     );
 
     const checks = resourceDefinitions
-      .filter((rd) => rd.checkActionsForResource !== undefined)
-      .map((rd) => ({
-        resource: rd.entity,
-        apiGroup: rd.apiGroup ?? '',
-        entityCollection: rd.entityCollection ?? '',
-        version: rd.version ?? 'v1',
-        scope: rd.scope ?? 'Cluster',
-        namespace: rd.namespace,
-        actions: rd.checkActionsForResource ?? [],
+      .map((rd) => rd.permissionsDefinition)
+      .filter(
+        (pd): pd is PermissionsDefinition =>
+          !!pd && pd.resourceActions.length > 0,
+      )
+      .map((pd) => ({
+        resource: pd.resource,
+        group: pd.group,
+        actions: pd.resourceActions,
       }));
 
     if (!checks.length) {

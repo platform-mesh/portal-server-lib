@@ -1,13 +1,18 @@
+export interface PermissionsDefinition {
+  group: string;
+  resource: string;
+  entityActions: string[];
+  resourceActions: string[];
+  entityContextKey: string;
+}
+
 export interface AuthorizationRequest {
   token: string;
   organization: string;
   accountPath: string;
   checks: {
     resource: string;
-    apiGroup: string;
-    entityCollection: string;
-    version: string;
-    scope?: string;
+    group: string;
     namespace?: string | null;
     name?: string;
     actions: string[];
@@ -34,8 +39,7 @@ export interface BatchAuthzItem {
   resourceAttributes: {
     verb: string;
     group: string;
-    version: string;
-    resource: string; // entityCollection (plural), lowercase
+    resource: string; // plural resource name, lowercase
     namespace?: string | null;
     name?: string | null;
   };

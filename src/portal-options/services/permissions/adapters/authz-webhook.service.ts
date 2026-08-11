@@ -53,9 +53,8 @@ export class AuthzWebhookService implements IAuthzService {
           clusterPath,
           resourceAttributes: {
             verb,
-            group: this.mapApiGroupForTesting(check.apiGroup),
-            version: check.version,
-            resource: check.entityCollection.toLowerCase(),
+            group: check.group,
+            resource: check.resource.toLowerCase(),
           },
         });
       }
@@ -109,9 +108,9 @@ export class AuthzWebhookService implements IAuthzService {
           clusterPath,
           resourceAttributes: {
             verb,
-            group: this.mapApiGroupForTesting(check.apiGroup),
-            version: check.version,
-            resource: check.entityCollection.toLowerCase(),
+            group: check.group,
+            resource: check.resource.toLowerCase(),
+            // Namespaced when a namespace is present; cluster-scoped otherwise.
             namespace: check.namespace,
             name: check.name,
           },
@@ -129,16 +128,6 @@ export class AuthzWebhookService implements IAuthzService {
     }
 
     return this.mapToInstancePermissions(results, correlationMap);
-  }
-
-  // TODO: TEST-ONLY — temporary apiGroup substitution. Remove once upstream
-  // sends the canonical dotted apiGroup values.
-  private mapApiGroupForTesting(apiGroup: string): string {
-    const testOverrides: Record<string, string> = {
-      core_platform_mesh_io: 'core.platform-mesh.io',
-      orchestrate_platform_mesh_io: 'orchestrate.platform-mesh.io',
-    };
-    return testOverrides[apiGroup] ?? apiGroup;
   }
 
   private extractUserEmail(token: string): string {

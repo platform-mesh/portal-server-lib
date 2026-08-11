@@ -1,23 +1,15 @@
 import { ContentConfiguration } from '@openmfp/portal-server-lib';
+import { PermissionsDefinition } from '../services/permissions/models/permissions.model.js';
 
 export interface ResourceDefinitionLocal {
   entity: string;
-  apiGroup?: string;
-  entityCollection?: string;
-  scope?: string;
-  namespace?: string | null;
-  version?: string;
-  checkActionsForResource?: string[];
+  permissionsDefinition?: PermissionsDefinition;
 }
 
-function mergeActions(
+function mergeResourceActions(
   existing: string[] | undefined,
   incoming: string[] | undefined,
-): string[] | undefined {
-  if (existing === undefined && incoming === undefined) {
-    return undefined;
-  }
-
+): string[] {
   return [...new Set([...(existing ?? []), ...(incoming ?? [])])];
 }
 
@@ -30,17 +22,20 @@ function collectFromNodes(
       | ResourceDefinitionLocal
       | undefined;
 
-    if (
-      rd?.entity !== undefined &&
-      rd.checkActionsForResource !== undefined) {
+    if (rd?.entity !== undefined && rd.permissionsDefinition !== undefined) {
       const existing = acc.get(rd.entity);
 
+      // Keep the latest permissionsDefinition, but union its resourceActions
+      // with the previously collected one's (dedupe across duplicate entities).
       acc.set(rd.entity, {
         ...rd,
-        checkActionsForResource: mergeActions(
-          existing?.checkActionsForResource,
-          rd.checkActionsForResource,
-        ),
+        permissionsDefinition: {
+          ...rd.permissionsDefinition,
+          resourceActions: mergeResourceActions(
+            existing?.permissionsDefinition?.resourceActions,
+            rd.permissionsDefinition.resourceActions,
+          ),
+        },
       });
     }
 
