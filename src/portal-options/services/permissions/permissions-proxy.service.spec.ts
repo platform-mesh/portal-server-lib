@@ -1,7 +1,11 @@
 import { ContentConfiguration } from '@openmfp/portal-server-lib';
 import { mock } from 'jest-mock-extended';
 import { AuthzWebhookService } from './adapters/authz-webhook.service.js';
-import { AuthorizationRequest, Permission } from './models/permissions.model.js';
+import {
+  AuthorizationRequest,
+  Permission,
+  PermissionsDefinition,
+} from './models/permissions.model.js';
 import { PermissionsProxyService } from './permissions-proxy.service.js';
 
 function makeCC(
@@ -14,49 +18,44 @@ function makeCC(
   };
 }
 
+function makePd(
+  overrides: Partial<PermissionsDefinition> = {},
+): PermissionsDefinition {
+  return {
+    group: 'core.platform-mesh.io',
+    resource: 'Accounts',
+    entityActions: ['get', 'delete'],
+    resourceActions: ['create', 'list'],
+    entityContextKey: 'entityName',
+    ...overrides,
+  };
+}
+
+function makeNode(rd: Record<string, unknown>) {
+  return { context: { resourceDefinition: rd } };
+}
+
 const CC_WITH_CHECK = makeCC([
-  {
-    context: {
-      resourceDefinition: {
-        entity: 'Account',
-        apiGroup: 'core_platform_mesh_io',
-        entityCollection: 'Accounts',
-        scope: 'Cluster',
-        version: 'v1alpha1',
-        checkActionsForResource: ['get', 'delete'],
-      },
-    },
-  },
+  makeNode({ entity: 'Account', permissionsDefinition: makePd() }),
 ]);
 
-const CC_WITHOUT_CHECK = makeCC([
-  {
-    context: {
-      resourceDefinition: {
-        entity: 'NoCheck',
-        apiGroup: 'core_platform_mesh_io',
-        entityCollection: 'NoChecks',
-        // no checkActionsForResource
-      },
-    },
-  },
-]);
+const CC_WITHOUT_PD = makeCC([makeNode({ entity: 'NoCheck' })]);
 
 const PERMISSIONS: Permission[] = [
-  { resource: 'Account', actions: ['get', 'delete'] },
+  { resource: 'Accounts', actions: ['create', 'list'] },
 ];
 
-function makeAuthzRequest(overrides: Partial<AuthorizationRequest> = {}): AuthorizationRequest {
+function makeAuthzRequest(
+  overrides: Partial<AuthorizationRequest> = {},
+): AuthorizationRequest {
   return {
     token: 'my-token',
     organization: 'my-org',
     accountPath: 'sub-path',
     checks: [
       {
-        resource: 'HttpBin',
-        apiGroup: 'example.com',
-        entityCollection: 'httpbins',
-        version: 'v1',
+        resource: 'HttpBins',
+        group: 'example.com',
         namespace: 'default',
         name: 'my-bin',
         actions: ['get', 'list'],
@@ -76,13 +75,10 @@ describe('PermissionsProxyService', () => {
   });
 
   describe('resolvePermissions', () => {
-    it('returns undefined when no resource definitions have checkActionsForResource', async () => {
-      const result = await svc.resolvePermissions(
-        'tok',
-        'org',
-        '',
-        [CC_WITHOUT_CHECK],
-      );
+    it('returns undefined when no resource definitions have a permissionsDefinition', async () => {
+      const result = await svc.resolvePermissions('tok', 'org', '', [
+        CC_WITHOUT_PD,
+      ]);
       expect(result).toBeUndefined();
       expect(authzWebhook.checkActionsForResource).not.toHaveBeenCalled();
     });
@@ -92,7 +88,21 @@ describe('PermissionsProxyService', () => {
       expect(result).toBeUndefined();
     });
 
-    it('delegates to authzWebhook.checkActionsForResource with correct request', async () => {
+    it('returns undefined when permissionsDefinition has empty resourceActions', async () => {
+      const cc = makeCC([
+        makeNode({
+          entity: 'Account',
+          permissionsDefinition: makePd({ resourceActions: [] }),
+        }),
+      ]);
+
+      const result = await svc.resolvePermissions('tok', 'org', '', [cc]);
+
+      expect(result).toBeUndefined();
+      expect(authzWebhook.checkActionsForResource).not.toHaveBeenCalled();
+    });
+
+    it('delegates to authzWebhook.checkActionsForResource with a check built from permissionsDefinition', async () => {
       authzWebhook.checkActionsForResource.mockResolvedValue(PERMISSIONS);
 
       const result = await svc.resolvePermissions(
@@ -108,14 +118,11 @@ describe('PermissionsProxyService', () => {
         organization: 'my-org',
         accountPath: 'sub-path',
         checks: [
-          expect.objectContaining({
-            resource: 'Account',
-            apiGroup: 'core_platform_mesh_io',
-            entityCollection: 'Accounts',
-            version: 'v1alpha1',
-            scope: 'Cluster',
-            actions: ['get', 'delete'],
-          }),
+          {
+            resource: 'Accounts',
+            group: 'core.platform-mesh.io',
+            actions: ['create', 'list'],
+          },
         ],
       });
     });
@@ -123,7 +130,9 @@ describe('PermissionsProxyService', () => {
     it('passes token, organization, accountPath to webhook', async () => {
       authzWebhook.checkActionsForResource.mockResolvedValue([]);
 
-      await svc.resolvePermissions('my-token', 'my-org', 'sub', [CC_WITH_CHECK]);
+      await svc.resolvePermissions('my-token', 'my-org', 'sub', [
+        CC_WITH_CHECK,
+      ]);
 
       const req = authzWebhook.checkActionsForResource.mock.calls[0][0];
       expect(req.token).toBe('my-token');
@@ -131,89 +140,53 @@ describe('PermissionsProxyService', () => {
       expect(req.accountPath).toBe('sub');
     });
 
-    it('defaults version to v1 when not set on resource definition', async () => {
-      authzWebhook.checkActionsForResource.mockResolvedValue([]);
-      const ccNoVersion = makeCC([
-        {
-          context: {
-            resourceDefinition: {
-              entity: 'Foo',
-              apiGroup: 'foo',
-              entityCollection: 'foos',
-              checkActionsForResource: ['get'],
-            },
-          },
-        },
-      ]);
-
-      await svc.resolvePermissions('tok', 'org', '', [ccNoVersion]);
-
-      const req = authzWebhook.checkActionsForResource.mock.calls[0][0];
-      expect(req.checks[0].version).toBe('v1');
-    });
-
-    it('defaults scope to Cluster when not set on resource definition', async () => {
-      authzWebhook.checkActionsForResource.mockResolvedValue([]);
-      const ccNoScope = makeCC([
-        {
-          context: {
-            resourceDefinition: {
-              entity: 'Bar',
-              entityCollection: 'bars',
-              checkActionsForResource: ['list'],
-            },
-          },
-        },
-      ]);
-
-      await svc.resolvePermissions('tok', 'org', '', [ccNoScope]);
-
-      const req = authzWebhook.checkActionsForResource.mock.calls[0][0];
-      expect(req.checks[0].scope).toBe('Cluster');
-    });
-
     it('returns undefined when webhook returns undefined', async () => {
       authzWebhook.checkActionsForResource.mockResolvedValue(undefined);
 
-      const result = await svc.resolvePermissions('tok', 'org', '', [CC_WITH_CHECK]);
+      const result = await svc.resolvePermissions('tok', 'org', '', [
+        CC_WITH_CHECK,
+      ]);
 
       expect(result).toBeUndefined();
     });
 
-    it('filters out resource definitions without checkActionsForResource', async () => {
+    it('filters out resource definitions whose permissionsDefinition has no resourceActions', async () => {
       authzWebhook.checkActionsForResource.mockResolvedValue([]);
       const mixed = makeCC([
-        {
-          context: {
-            resourceDefinition: {
-              entity: 'NoCheck',
-              entityCollection: 'nochecks',
-            },
-          },
-        },
-        {
-          context: {
-            resourceDefinition: {
-              entity: 'WithCheck',
-              entityCollection: 'withchecks',
-              checkActionsForResource: ['get'],
-            },
-          },
-        },
+        makeNode({
+          entity: 'NoActions',
+          permissionsDefinition: makePd({
+            resource: 'NoActions',
+            resourceActions: [],
+          }),
+        }),
+        makeNode({
+          entity: 'WithCheck',
+          permissionsDefinition: makePd({
+            resource: 'WithChecks',
+            resourceActions: ['get'],
+          }),
+        }),
       ]);
 
       await svc.resolvePermissions('tok', 'org', '', [mixed]);
 
       const req = authzWebhook.checkActionsForResource.mock.calls[0][0];
       expect(req.checks).toHaveLength(1);
-      expect(req.checks[0].resource).toBe('WithCheck');
+      expect(req.checks[0].resource).toBe('WithChecks');
+      expect(req.checks[0].actions).toEqual(['get']);
     });
   });
 
   describe('checkResourceInstance', () => {
     it('delegates AuthorizationRequest directly to authzWebhook.checkActionsForInstance', async () => {
       const mockResponse: Permission[] = [
-        { resource: 'HttpBin', namespace: 'default', name: 'my-bin', actions: ['get'] },
+        {
+          resource: 'HttpBins',
+          namespace: 'default',
+          name: 'my-bin',
+          actions: ['get'],
+        },
       ];
       authzWebhook.checkActionsForInstance.mockResolvedValue(mockResponse);
 
@@ -242,7 +215,12 @@ describe('PermissionsProxyService', () => {
 
     it('returns Permission[] when webhook returns results', async () => {
       const permissions: Permission[] = [
-        { resource: 'HttpBin', namespace: 'default', name: 'my-bin', actions: ['get', 'list'] },
+        {
+          resource: 'HttpBins',
+          namespace: 'default',
+          name: 'my-bin',
+          actions: ['get', 'list'],
+        },
       ];
       authzWebhook.checkActionsForInstance.mockResolvedValue(permissions);
 

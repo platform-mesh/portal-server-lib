@@ -11,10 +11,8 @@ function makeRequest(overrides: Partial<AuthorizationRequest> = {}): Authorizati
     accountPath: 'sub-path',
     checks: [
       {
-        resource: 'HttpBin',
-        apiGroup: 'example.com',
-        entityCollection: 'httpbins',
-        version: 'v1',
+        resource: 'HttpBins',
+        group: 'example.com',
         namespace: 'default',
         name: 'my-bin',
         actions: ['get', 'delete'],
@@ -103,13 +101,13 @@ describe('PermissionsController', () => {
 
       const req = makeRequest({
         checks: [
-          { resource: 'Foo', apiGroup: 'foo', entityCollection: 'foos', version: 'v1', actions: ['list'] },
+          { resource: 'Foos', group: 'foo', actions: ['list'] },
         ],
       });
       await controller.checkResource(req);
 
       const passedReq = proxyService.checkResourceInstance.mock.calls[0][0];
-      expect(passedReq.checks[0].resource).toBe('Foo');
+      expect(passedReq.checks[0].resource).toBe('Foos');
       expect(passedReq.checks[0].actions).toEqual(['list']);
     });
   });

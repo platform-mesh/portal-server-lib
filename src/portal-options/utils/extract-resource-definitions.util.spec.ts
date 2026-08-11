@@ -1,4 +1,5 @@
 import { ContentConfiguration } from '@openmfp/portal-server-lib';
+import { PermissionsDefinition } from '../services/permissions/models/permissions.model.js';
 import { extractResourceDefinitions } from './extract-resource-definitions.util.js';
 
 function makeCC(
@@ -8,6 +9,19 @@ function makeCC(
     name: 'test',
     creationTimestamp: '',
     luigiConfigFragment: { data: { nodes } },
+  };
+}
+
+function makePd(
+  overrides: Partial<PermissionsDefinition> = {},
+): PermissionsDefinition {
+  return {
+    group: 'core.platform-mesh.io',
+    resource: 'Accounts',
+    entityActions: ['get', 'update', 'delete'],
+    resourceActions: ['create', 'list'],
+    entityContextKey: 'entityName',
+    ...overrides,
   };
 }
 
@@ -27,8 +41,7 @@ describe('extractResourceDefinitions', () => {
         {
           context: {
             resourceDefinition: {
-              apiGroup: 'foo',
-              checkActionsForResource: ['get'],
+              permissionsDefinition: makePd(),
             },
           },
         },
@@ -37,15 +50,13 @@ describe('extractResourceDefinitions', () => {
     expect(result).toEqual([]);
   });
 
-  it('ignores resourceDefinition with entity but without checkActionsForResource', () => {
+  it('ignores resourceDefinition with entity but without permissionsDefinition', () => {
     const result = extractResourceDefinitions([
       makeCC([
         {
           context: {
             resourceDefinition: {
               entity: 'Foo',
-              apiGroup: 'foo',
-              entityCollection: 'foos',
             },
           },
         },
@@ -54,18 +65,15 @@ describe('extractResourceDefinitions', () => {
     expect(result).toEqual([]);
   });
 
-  it('collects resourceDefinition with checkActionsForResource', () => {
+  it('collects resourceDefinition that has entity and permissionsDefinition', () => {
+    const pd = makePd();
     const result = extractResourceDefinitions([
       makeCC([
         {
           context: {
             resourceDefinition: {
               entity: 'Account',
-              apiGroup: 'core.example.com',
-              entityCollection: 'Accounts',
-              scope: 'Cluster',
-              version: 'v1',
-              checkActionsForResource: ['get', 'delete'],
+              permissionsDefinition: pd,
             },
           },
         },
@@ -75,20 +83,20 @@ describe('extractResourceDefinitions', () => {
     expect(result).toHaveLength(1);
     expect(result[0]).toMatchObject({
       entity: 'Account',
-      apiGroup: 'core.example.com',
-      checkActionsForResource: ['get', 'delete'],
+      permissionsDefinition: pd,
     });
   });
 
-  it('merges duplicate entities across nodes with set-dedup on checkActionsForResource', () => {
+  it('merges duplicate entities across nodes, set-deduping resourceActions', () => {
     const result = extractResourceDefinitions([
       makeCC([
         {
           context: {
             resourceDefinition: {
               entity: 'Account',
-              entityCollection: 'accounts',
-              checkActionsForResource: ['get', 'list'],
+              permissionsDefinition: makePd({
+                resourceActions: ['create', 'list'],
+              }),
             },
           },
         },
@@ -96,8 +104,9 @@ describe('extractResourceDefinitions', () => {
           context: {
             resourceDefinition: {
               entity: 'Account',
-              entityCollection: 'accounts',
-              checkActionsForResource: ['list', 'delete'],
+              permissionsDefinition: makePd({
+                resourceActions: ['list', 'watch'],
+              }),
             },
           },
         },
@@ -107,18 +116,24 @@ describe('extractResourceDefinitions', () => {
     expect(result).toHaveLength(1);
     expect(result[0].entity).toBe('Account');
     // 'list' appears in both → deduplicated
-    expect(result[0].checkActionsForResource).toEqual(['get', 'list', 'delete']);
+    expect(result[0].permissionsDefinition?.resourceActions).toEqual([
+      'create',
+      'list',
+      'watch',
+    ]);
   });
 
-  it('merges duplicate entities across content configurations with set-dedup on checkActionsForResource', () => {
+  it('merges duplicate entities across content configurations, set-deduping resourceActions', () => {
     const result = extractResourceDefinitions([
       makeCC([
         {
           context: {
             resourceDefinition: {
               entity: 'Pod',
-              entityCollection: 'pods',
-              checkActionsForResource: ['get', 'patch'],
+              permissionsDefinition: makePd({
+                resource: 'Pods',
+                resourceActions: ['list', 'create'],
+              }),
             },
           },
         },
@@ -128,8 +143,10 @@ describe('extractResourceDefinitions', () => {
           context: {
             resourceDefinition: {
               entity: 'Pod',
-              entityCollection: 'pods',
-              checkActionsForResource: ['patch', 'delete'],
+              permissionsDefinition: makePd({
+                resource: 'Pods',
+                resourceActions: ['create', 'watch'],
+              }),
             },
           },
         },
@@ -137,7 +154,36 @@ describe('extractResourceDefinitions', () => {
     ]);
 
     expect(result).toHaveLength(1);
-    expect(result[0].checkActionsForResource).toEqual(['get', 'patch', 'delete']);
+    expect(result[0].permissionsDefinition?.resourceActions).toEqual([
+      'list',
+      'create',
+      'watch',
+    ]);
+  });
+
+  it('keeps the latest permissionsDefinition fields when merging duplicates', () => {
+    const result = extractResourceDefinitions([
+      makeCC([
+        {
+          context: {
+            resourceDefinition: {
+              entity: 'Account',
+              permissionsDefinition: makePd({ group: 'old.group' }),
+            },
+          },
+        },
+        {
+          context: {
+            resourceDefinition: {
+              entity: 'Account',
+              permissionsDefinition: makePd({ group: 'new.group' }),
+            },
+          },
+        },
+      ]),
+    ]);
+
+    expect(result[0].permissionsDefinition?.group).toBe('new.group');
   });
 
   it('collects resource definitions from nested children nodes', () => {
@@ -150,8 +196,7 @@ describe('extractResourceDefinitions', () => {
               context: {
                 resourceDefinition: {
                   entity: 'NestedEntity',
-                  entityCollection: 'nestedentities',
-                  checkActionsForResource: ['get'],
+                  permissionsDefinition: makePd(),
                 },
               },
             },
@@ -177,8 +222,7 @@ describe('extractResourceDefinitions', () => {
                   context: {
                     resourceDefinition: {
                       entity: 'DeepEntity',
-                      entityCollection: 'deepentities',
-                      checkActionsForResource: ['list'],
+                      permissionsDefinition: makePd(),
                     },
                   },
                 },
@@ -200,8 +244,7 @@ describe('extractResourceDefinitions', () => {
           context: {
             resourceDefinition: {
               entity: 'Alpha',
-              entityCollection: 'alphas',
-              checkActionsForResource: ['get'],
+              permissionsDefinition: makePd({ resource: 'Alphas' }),
             },
           },
         },
@@ -211,8 +254,7 @@ describe('extractResourceDefinitions', () => {
           context: {
             resourceDefinition: {
               entity: 'Beta',
-              entityCollection: 'betas',
-              checkActionsForResource: ['list'],
+              permissionsDefinition: makePd({ resource: 'Betas' }),
             },
           },
         },
@@ -236,41 +278,26 @@ describe('extractResourceDefinitions', () => {
     expect(extractResourceDefinitions([noNodes])).toEqual([]);
   });
 
-  it('preserves version field from resource definition', () => {
+  it('treats an undefined resourceActions as an empty list when merging', () => {
     const result = extractResourceDefinitions([
       makeCC([
         {
           context: {
             resourceDefinition: {
-              entity: 'Foo',
-              entityCollection: 'foos',
-              version: 'v1beta1',
-              checkActionsForResource: ['get'],
+              entity: 'Account',
+              permissionsDefinition: {
+                group: 'g',
+                resource: 'Accounts',
+                entityActions: ['get'],
+                entityContextKey: 'entityName',
+              } as unknown as PermissionsDefinition,
             },
           },
         },
       ]),
     ]);
 
-    expect(result[0].version).toBe('v1beta1');
-  });
-
-  it('preserves namespace field from resource definition', () => {
-    const result = extractResourceDefinitions([
-      makeCC([
-        {
-          context: {
-            resourceDefinition: {
-              entity: 'Bar',
-              entityCollection: 'bars',
-              namespace: 'my-namespace',
-              checkActionsForResource: ['get'],
-            },
-          },
-        },
-      ]),
-    ]);
-
-    expect(result[0].namespace).toBe('my-namespace');
+    expect(result).toHaveLength(1);
+    expect(result[0].permissionsDefinition?.resourceActions).toEqual([]);
   });
 });
