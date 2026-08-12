@@ -1,17 +1,21 @@
-import { K8sRequestContext, K8sResourceDescriptor } from '../models/k8s.js';
-import { KcpKubernetesService } from '../services/kcp-k8s.service.js';
-import { processContentConfigurationForAccountHierarchy } from '../utils/account-hierarchy-resolver.js';
-import { welcomeNodeConfig } from './models/welcome-node-config.js';
 import { Injectable } from '@nestjs/common';
 import {
   ContentConfiguration,
   ServiceProviderResponse,
   ServiceProviderService,
 } from '@openmfp/portal-server-lib';
+import { K8sRequestContext, K8sResourceDescriptor } from '../models/k8s.js';
+import { KcpKubernetesService } from '../services/kcp-k8s.service.js';
+import { PermissionsProxyService } from '../services/permissions/permissions-proxy.service.js';
+import { processContentConfigurationForAccountHierarchy } from '../utils/account-hierarchy-resolver.js';
+import { welcomeNodeConfig } from './models/welcome-node-config.js';
 
 @Injectable()
 export class KubernetesServiceProvidersService implements ServiceProviderService {
-  constructor(private kcpKubernetesService: KcpKubernetesService) {}
+  constructor(
+    private kcpKubernetesService: KcpKubernetesService,
+    private permissionsProxyService: PermissionsProxyService,
+  ) {}
 
   async getServiceProviders(
     token: string,
@@ -30,7 +34,7 @@ export class KubernetesServiceProvidersService implements ServiceProviderService
     if (!context?.organization) {
       throw new Error('Context with organization is required');
     }
-
+    
     const response = await this.listContentConfigurationsForEntity(
       token,
       context as K8sRequestContext,
@@ -62,6 +66,15 @@ export class KubernetesServiceProvidersService implements ServiceProviderService
         return contentConfiguration;
       });
 
+    const accountPath =
+      context?.accountPath ?? context?.['core_platform-mesh_io_account'] ?? '';
+    const nodesPermissions = await this.permissionsProxyService.resolvePermissions(
+      token,
+      context.organization,
+      accountPath,
+      contentConfigurations,
+    );
+
     return {
       rawServiceProviders: [
         {
@@ -69,6 +82,7 @@ export class KubernetesServiceProvidersService implements ServiceProviderService
           displayName: '',
           creationTimestamp: '',
           contentConfiguration: contentConfigurations,
+          nodeContext: { nodesPermissions },
         },
       ],
     };
@@ -90,12 +104,11 @@ export class KubernetesServiceProvidersService implements ServiceProviderService
         context,
         token,
       );
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
 
       if (error.code == 429 || error.statusCode == 429) {
         await new Promise((resolve) => setTimeout(resolve, 1000));
-        console.log('Retry after 1 second reading kubernetes resources.');
         return await this.kcpKubernetesService.listClusterCustomObjectInKcpVirtualWorkspace(
           gvr,
           context,

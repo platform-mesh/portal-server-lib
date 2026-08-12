@@ -1,4 +1,5 @@
 import { RequestContext } from '../pm-request-context-provider.js';
+import { PermissionsProxyService } from '../services/permissions/permissions-proxy.service.js';
 import { ContentConfigurationServiceProvidersService } from './content-configuration-service-providers.service.js';
 import { welcomeNodeConfig } from './models/welcome-node-config.js';
 import { GraphQLClient } from 'graphql-request';
@@ -18,9 +19,15 @@ describe('ContentConfigurationServiceProvidersService', () => {
   let service: ContentConfigurationServiceProvidersService;
   let mockClient: jest.Mocked<GraphQLClient>;
   let context: RequestContext;
+  let permissionsProxyService: jest.Mocked<PermissionsProxyService>;
 
   beforeEach(() => {
-    service = new ContentConfigurationServiceProvidersService();
+    permissionsProxyService = {
+      resolvePermissions: jest.fn().mockResolvedValue([]),
+    } as unknown as jest.Mocked<PermissionsProxyService>;
+    service = new ContentConfigurationServiceProvidersService(
+      permissionsProxyService,
+    );
     mockClient = new GraphQLClient('') as any;
     (GraphQLClient as jest.Mock).mockReturnValue(mockClient);
     context = {

@@ -1,4 +1,5 @@
 import { K8sRequestContext, K8sResourceDescriptor } from '../models/k8s.js';
+import { buildWorkspacePath } from '../utils/build-workspace-path.util.js';
 import { getOrganization } from '../utils/domain.js';
 import {
   CoreV1Api,
@@ -65,20 +66,8 @@ export class KcpKubernetesService {
     return this.k8sCoreV1Api;
   }
 
-  private buildWorkspacePath(organization?: string, account?: string) {
-    let path = `root:orgs`;
-    if (organization) {
-      path += `:${organization}`;
-    }
-    if (account) {
-      path += `:${account}`; // FIXME: how are nested accounts and paths handled in the portal?
-    }
-
-    return path;
-  }
-
   getKcpVirtualWorkspaceUrl(organization: string, account: string) {
-    const path = this.buildWorkspacePath(organization, account);
+    const path = buildWorkspacePath([organization, account]);
     return new URL(
       `${this.baseUrl.origin}/services/contentconfigurations/clusters/${path}`,
     );
@@ -90,14 +79,14 @@ export class KcpKubernetesService {
     workspacePath?: string,
   ) {
     const path =
-      workspacePath || this.buildWorkspacePath(organization, account);
+      workspacePath || buildWorkspacePath([organization, account]);
     return new URL(`${this.baseUrl.origin}/clusters/${path}`);
   }
 
   getKcpWorkspacePublicUrl(request: Request) {
     const organization = getOrganization(request);
     const account = request.query?.['core_platform-mesh_io_account'];
-    const path = this.buildWorkspacePath(organization, account);
+    const path = buildWorkspacePath([organization, account]);
 
     const kcpUrl = process.env.KCP_URL || '';
     if (kcpUrl) {

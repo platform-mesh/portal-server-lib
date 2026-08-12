@@ -8,7 +8,7 @@ export const updateEntityTypeFromAccountPath = (
   accountPath: string,
 ): ContentConfiguration => {
   contentConfiguration.luigiConfigFragment.data.nodes.forEach((node) => {
-    if (!node.entityType.includes(ACCOUNT_ENTITY_TYPE)) {
+    if (!node.entityType?.includes(ACCOUNT_ENTITY_TYPE)) {
       return;
     }
 
@@ -31,8 +31,9 @@ export const updateAccountNodeChildren = (
   contentConfiguration: ContentConfiguration,
   accountPath: string,
 ): ContentConfiguration => {
-  const accountChildrenNode =
-    contentConfiguration.luigiConfigFragment.data.nodes[0]?.children?.[0];
+  const children =
+    contentConfiguration.luigiConfigFragment.data.nodes[0]?.children;
+  const accountChildrenNode = Array.isArray(children) ? children[0] : undefined;
 
   if (accountChildrenNode) {
     const nextHierarchyLevel =
@@ -40,11 +41,13 @@ export const updateAccountNodeChildren = (
     const previousPathSegment = accountChildrenNode.pathSegment;
     const nextPathSegment = `:${nextHierarchyLevel}_${ACCOUNT_ENTITY_TYPE}Id`;
 
-    replaceStringDeep(
-      accountChildrenNode,
-      previousPathSegment,
-      nextPathSegment,
-    );
+    if (previousPathSegment) {
+      replaceStringDeep(
+        accountChildrenNode,
+        previousPathSegment,
+        nextPathSegment,
+      );
+    }
   }
 
   return contentConfiguration;
@@ -62,4 +65,6 @@ export const processContentConfigurationForAccountHierarchy = (
 
     return updateEntityTypeFromAccountPath(contentConfiguration, accountPath);
   }
+
+  return contentConfiguration;
 };
