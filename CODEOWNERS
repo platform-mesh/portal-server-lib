@@ -1,4 +1,5 @@
-# Default code owners
-* @platform-mesh/kube @platform-mesh/tsc @platform-mesh/ui-approvers @platform-mesh/frame
-package.json
+* @platform-mesh/node-maintainers
+
+# ownerless so renovate can auto-merge updates
 package-lock.json
+package.json
