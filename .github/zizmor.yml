@@ -1,0 +1,8 @@
+# zizmor configuration for portal-server-lib workflows.
+# https://docs.zizmor.sh/configuration/
+rules:
+  # Repo convention: jobs are identified by their key (e.g. `build`,
+  # `quality-gate`), not a separate display name. Adding `name:` to every job
+  # would fight the established style across all workflows here.
+  anonymous-definition:
+    disable: true

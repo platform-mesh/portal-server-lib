@@ -1,5 +1,6 @@
 import { K8sRequestContext, K8sResourceDescriptor } from '../models/k8s.js';
 import { KcpKubernetesService } from '../services/kcp-k8s.service.js';
+import { PermissionsProxyService } from '../services/permissions/permissions-proxy.service.js';
 import { KubernetesServiceProvidersService } from './kubernetes-service-providers.service.js';
 import { welcomeNodeConfig } from './models/welcome-node-config.js';
 import { Test, TestingModule } from '@nestjs/testing';
@@ -34,6 +35,7 @@ jest.mock('@kubernetes/client-node/dist/gen/middleware.js', () => ({
 describe('KubernetesServiceProvidersService', () => {
   let service: KubernetesServiceProvidersService;
   let kcpKubernetesServiceMock: jest.Mocked<KcpKubernetesService>;
+  let permissionsProxyServiceMock: jest.Mocked<PermissionsProxyService>;
 
   const mockToken = 'test-token-123';
   const mockEntities = ['test-entity'];
@@ -44,6 +46,9 @@ describe('KubernetesServiceProvidersService', () => {
 
   beforeEach(async () => {
     kcpKubernetesServiceMock = mock<KcpKubernetesService>();
+    permissionsProxyServiceMock = {
+      resolvePermissions: jest.fn().mockResolvedValue([]),
+    } as unknown as jest.Mocked<PermissionsProxyService>;
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -51,6 +56,10 @@ describe('KubernetesServiceProvidersService', () => {
         {
           provide: KcpKubernetesService,
           useValue: kcpKubernetesServiceMock,
+        },
+        {
+          provide: PermissionsProxyService,
+          useValue: permissionsProxyServiceMock,
         },
       ],
     }).compile();
@@ -443,7 +452,7 @@ describe('KubernetesServiceProvidersService', () => {
       },
     );
 
-    const svc = new KubernetesServiceProvidersService(kcpKubernetesServiceMock);
+    const svc = new KubernetesServiceProvidersService(kcpKubernetesServiceMock, permissionsProxyServiceMock);
     const res = await svc.getServiceProviders('token', ['main'], {
       organization: 'org',
       isSubDomain: true,
@@ -477,7 +486,7 @@ describe('KubernetesServiceProvidersService', () => {
       },
     );
 
-    const svc = new KubernetesServiceProvidersService(kcpKubernetesServiceMock);
+    const svc = new KubernetesServiceProvidersService(kcpKubernetesServiceMock, permissionsProxyServiceMock);
     const res = await svc.getServiceProviders('token', ['main'], {
       organization: 'org',
       isSubDomain: true,
@@ -524,7 +533,7 @@ describe('KubernetesServiceProvidersService', () => {
       },
     );
 
-    const svc = new KubernetesServiceProvidersService(kcpKubernetesServiceMock);
+    const svc = new KubernetesServiceProvidersService(kcpKubernetesServiceMock, permissionsProxyServiceMock);
     const res = await svc.getServiceProviders('token', ['main'], {
       organization: 'org',
       isSubDomain: true,
@@ -560,7 +569,7 @@ describe('KubernetesServiceProvidersService', () => {
       },
     );
 
-    const svc = new KubernetesServiceProvidersService(kcpKubernetesServiceMock);
+    const svc = new KubernetesServiceProvidersService(kcpKubernetesServiceMock, permissionsProxyServiceMock);
     const res = await svc.getServiceProviders('token', ['main'], {
       organization: 'org',
       isSubDomain: true,

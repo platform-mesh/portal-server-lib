@@ -29,14 +29,20 @@ export class PMLogoutService implements LogoutCallback {
       const refreshToken = this.cookiesService.getAuthCookie(request);
 
       const body = new URLSearchParams({
-        client_id: authConfig.clientId,
-        client_secret: authConfig.clientSecret,
         refresh_token: refreshToken,
       });
 
+      // Client credentials go in the Authorization header, not the form body:
+      // the client is registered with token_endpoint_auth_method
+      // client_secret_basic, and an IdP that enforces it rejects credentials
+      // sent as form parameters with unauthorized_client.
       await firstValueFrom(
         this.httpService.post(authConfig.endSessionUrl, body, {
           headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          auth: {
+            username: authConfig.clientId,
+            password: authConfig.clientSecret,
+          },
         }),
       );
     } catch (error: any) {
@@ -45,16 +51,36 @@ export class PMLogoutService implements LogoutCallback {
         error?.response?.data || error.message,
       );
       this.logger.warn('Trying to log out with the id token');
-      return this.logoutWithIdToken(request, authConfig.endSessionUrl);
+      return this.logoutWithIdToken(
+        request,
+        authConfig.endSessionUrl,
+        authConfig.clientId,
+      );
     }
   }
 
-  private logoutWithIdToken(request: Request, endSessionUrl: string) {
+  private logoutWithIdToken(
+    request: Request,
+    endSessionUrl: string,
+    clientId: string,
+  ) {
     const { id_token_hint, post_logout_redirect_uri } = request.query;
-    const params = new URLSearchParams({
-      id_token_hint: String(id_token_hint || ''),
-      post_logout_redirect_uri: String(post_logout_redirect_uri || ''),
-    });
+    const params = new URLSearchParams();
+
+    // RP-initiated logout honours post_logout_redirect_uri only together with
+    // id_token_hint or client_id. An empty id_token_hint is not a no-op: the
+    // IdP rejects the request ("Missing parameters: id_token_hint") and the
+    // user is stranded on an error page instead of being signed out.
+    if (id_token_hint) {
+      params.set('id_token_hint', String(id_token_hint));
+    } else {
+      params.set('client_id', clientId);
+    }
+
+    if (post_logout_redirect_uri) {
+      params.set('post_logout_redirect_uri', String(post_logout_redirect_uri));
+    }
+
     return `${endSessionUrl}?${params}`;
   }
 }

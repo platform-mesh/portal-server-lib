@@ -7,3 +7,7 @@ export * from './service-providers/content-configuration-service-providers.servi
 export * from './service-providers/kubernetes-service-providers.service.js';
 
 export * from './services/kcp-k8s.service.js';
+export * from './services/permissions/adapters/authz-webhook.service.js';
+export * from './services/permissions/models/permissions.model.js';
+export * from './services/permissions/permissions-proxy.service.js';
+export * from './services/permissions/permissions.controller.js';
