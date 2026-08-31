@@ -12,7 +12,7 @@ permissions:
 jobs:
   auto-labeler:
     if: github.event.pull_request.head.repo.full_name == github.repository
-    uses: platform-mesh/.github/.github/workflows/job-auto-labeler.yml@9ddacafbe3260312cb1cc3f9974ad2fece8effe0
+    uses: platform-mesh/.github/.github/workflows/job-auto-labeler.yml@33d3ee309a70b300c1775d78054cbb9215673b7b
     permissions:
       contents: read # Needed to read repository contents
       pull-requests: write # Needed to add labels to the pull request

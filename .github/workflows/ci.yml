@@ -15,7 +15,7 @@ concurrency:
 
 jobs:
   build:
-    uses: platform-mesh/.github/.github/workflows/job-node-test.yml@9ddacafbe3260312cb1cc3f9974ad2fece8effe0
+    uses: platform-mesh/.github/.github/workflows/job-node-test.yml@33d3ee309a70b300c1775d78054cbb9215673b7b
     secrets: inherit # zizmor: ignore[secrets-inherit]
 
   quality-gate:
