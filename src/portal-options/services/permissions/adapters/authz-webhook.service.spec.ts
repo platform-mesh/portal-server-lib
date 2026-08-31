@@ -17,8 +17,8 @@ function makeJwt(payload: Record<string, unknown>): string {
 }
 
 const WEBHOOK_URL = 'https://authz.example.com';
-// The service posts to `${webhookUrl}/batch-authz ` (note the trailing space).
-const BATCH_URL = `${WEBHOOK_URL}/batch-authz `;
+// The service posts to `${webhookUrl}/batch-authz`.
+const BATCH_URL = `${WEBHOOK_URL}/batch-authz`;
 
 // The posted body is the SubjectAccessReview[] array itself.
 function postedItems(post: jest.Mock): SubjectAccessReview[] {
