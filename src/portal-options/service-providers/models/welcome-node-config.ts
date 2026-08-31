@@ -23,6 +23,7 @@ export const welcomeNodeConfig: ServiceProviderResponse = {
                   url: '/assets/platform-mesh-portal-ui-wc.js#welcome-view',
                   webcomponent: {
                     selfRegistered: true,
+                    type: 'module',
                   },
                   context: { kcpPath: 'root:orgs' },
                 },
