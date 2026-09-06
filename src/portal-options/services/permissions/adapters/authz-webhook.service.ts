@@ -154,7 +154,7 @@ export class AuthzWebhookService implements IAuthzService {
     try {
       const response = await firstValueFrom(
         this.httpService.post<BatchAuthzResult[]>(
-          `${this.webhookUrl}/batch-authz `,
+          `${this.webhookUrl}/batch-authz`,
           items,
           {
             headers: { 'Content-Type': 'application/json' },
