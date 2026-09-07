@@ -70,6 +70,72 @@ describe('KubernetesServiceProvidersService', () => {
   });
 
   describe('getServiceProviders', () => {
+    it.each([{ entities: [] }, { entities: ['core_platform-mesh_io_account'] }])(
+      'normalizes built-in and provider bundle nodes for entity selection %p',
+      async ({ entities }) => {
+        const portalOrigin = 'https://portal.example.test';
+        const config = {
+          name: 'accounts',
+          luigiConfigFragment: {
+            data: {
+              nodes: [
+                {
+                  label: 'Accounts',
+                  pathSegment: 'accounts',
+                  url: '/assets/platform-mesh-portal-ui-wc.js#generic-list-view',
+                  webcomponent: { selfRegistered: true },
+                },
+                {
+                  label: 'Provider detail',
+                  url: '/assets/platform-mesh-portal-ui-wc.js#generic-detail-view',
+                  webcomponent: { selfRegistered: true },
+                },
+                {
+                  label: 'Absolute URL',
+                  url: `${portalOrigin}/assets/platform-mesh-portal-ui-wc.js#generic-list-view`,
+                  webcomponent: { selfRegistered: true },
+                },
+                {
+                  label: 'Other view',
+                  url: 'https://provider.example.test/index.html',
+                },
+              ],
+            },
+          },
+        };
+        kcpKubernetesServiceMock.listClusterCustomObjectInKcpVirtualWorkspace.mockResolvedValue(
+          {
+            items: [
+              { status: { configurationResult: JSON.stringify(config) }, spec: {} },
+            ],
+          },
+        );
+
+        const result = await service.getServiceProviders(
+          mockToken,
+          entities,
+          mockContext,
+        );
+        const normalized = result.rawServiceProviders[0].contentConfiguration[0];
+        expect(
+          normalized.luigiConfigFragment.data.nodes.map(
+            (node) => node.webcomponent,
+          ),
+        ).toEqual([
+          { selfRegistered: true, type: 'module' },
+          { selfRegistered: true, type: 'module' },
+          { selfRegistered: true },
+          undefined,
+        ]);
+        expect(permissionsProxyServiceMock.resolvePermissions).toHaveBeenCalledWith(
+          mockToken,
+          mockContext.organization,
+          '',
+          [normalized],
+        );
+      },
+    );
+
     it('should throw error when token is missing', async () => {
       await expect(
         service.getServiceProviders('', mockEntities, mockContext),

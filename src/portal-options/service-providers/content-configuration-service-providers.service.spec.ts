@@ -45,6 +45,59 @@ describe('ContentConfigurationServiceProvidersService', () => {
     ).rejects.toThrow('Token is required');
   });
 
+  it.each([{ entities: [] }, { entities: ['core_platform-mesh_io_account'] }])(
+    'normalizes root and entity configuration through the GraphQL provider for %p',
+    async ({ entities }) => {
+      const config = {
+        name: 'accounts',
+        luigiConfigFragment: {
+          data: {
+            nodes: [
+              {
+                label: 'Accounts',
+                url: '/assets/platform-mesh-portal-ui-wc.js#generic-list-view',
+                webcomponent: { selfRegistered: true },
+              },
+            ],
+          },
+        },
+      };
+      mockClient.request.mockResolvedValue({
+        ui_platform_mesh_io: {
+          v1alpha1: {
+            ContentConfigurations: {
+              items: [
+                {
+                  metadata: {
+                    name: 'accounts',
+                    labels: {
+                      'ui.platform-mesh.io/entity': entities[0] ?? 'main',
+                    },
+                  },
+                  spec: {},
+                  status: { configurationResult: JSON.stringify(config) },
+                },
+              ],
+            },
+          },
+        },
+      });
+
+      const result = await service.getServiceProviders(
+        'token',
+        entities,
+        context,
+      );
+      expect(
+        result.rawServiceProviders[0].contentConfiguration[0].luigiConfigFragment
+          .data.nodes[0].webcomponent,
+      ).toEqual({
+        selfRegistered: true,
+        type: 'module',
+      });
+    },
+  );
+
   it('throws if context organization is missing', async () => {
     const badContext = { ...context, organization: undefined } as any;
     await expect(
