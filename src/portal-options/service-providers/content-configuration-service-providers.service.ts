@@ -8,6 +8,7 @@ import { GraphQLClient } from 'graphql-request';
 import { RequestContext } from '../pm-request-context-provider.js';
 import { PermissionsProxyService } from '../services/permissions/permissions-proxy.service.js';
 import { processContentConfigurationForAccountHierarchy } from '../utils/account-hierarchy-resolver.js';
+import { normalizePortalWebComponentModules } from '../utils/portal-web-component-modules.js';
 import { contentConfigurationsQuery } from './contentconfigurations-query.js';
 import { ContentConfigurationQueryResponse } from './models/contentconfigurations.js';
 import { welcomeNodeConfig } from './models/welcome-node-config.js';
@@ -93,6 +94,7 @@ export class ContentConfigurationServiceProvidersService implements ServiceProvi
                 contentConfiguration,
                 context,
               );
+              normalizePortalWebComponentModules(contentConfiguration);
 
               return contentConfiguration;
             } catch (parseError) {

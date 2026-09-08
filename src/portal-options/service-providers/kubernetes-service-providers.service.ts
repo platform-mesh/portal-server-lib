@@ -8,6 +8,7 @@ import { K8sRequestContext, K8sResourceDescriptor } from '../models/k8s.js';
 import { KcpKubernetesService } from '../services/kcp-k8s.service.js';
 import { PermissionsProxyService } from '../services/permissions/permissions-proxy.service.js';
 import { processContentConfigurationForAccountHierarchy } from '../utils/account-hierarchy-resolver.js';
+import { normalizePortalWebComponentModules } from '../utils/portal-web-component-modules.js';
 import { welcomeNodeConfig } from './models/welcome-node-config.js';
 
 @Injectable()
@@ -62,6 +63,7 @@ export class KubernetesServiceProvidersService implements ServiceProviderService
           contentConfiguration,
           context,
         );
+        normalizePortalWebComponentModules(contentConfiguration);
 
         return contentConfiguration;
       });
