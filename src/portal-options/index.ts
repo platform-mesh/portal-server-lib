@@ -11,3 +11,7 @@ export * from './services/permissions/adapters/authz-webhook.service.js';
 export * from './services/permissions/models/permissions.model.js';
 export * from './services/permissions/permissions-proxy.service.js';
 export * from './services/permissions/permissions.controller.js';
+export * from './services/platform-admin/platform-admin.types.js';
+export * from './services/platform-admin/platform-admin.service.js';
+export * from './services/platform-admin/platform-admin.guard.js';
+export * from './services/platform-admin/platform-admin.controller.js';
