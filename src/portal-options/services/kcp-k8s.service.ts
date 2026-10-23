@@ -171,6 +171,84 @@ export class KcpKubernetesService {
     });
   }
 
+  public async listClusterCustomObjects(
+    gvr: K8sResourceDescriptor,
+    workspacePath: string,
+  ): Promise<{ items: unknown[] }> {
+    return (await this.k8sCustomObjectsApi.listClusterCustomObject(gvr, {
+      middleware: [
+        new PromiseMiddlewareWrapper({
+          pre: async (context) => {
+            const kcpUrl = this.getKcpWorkspaceUrl(
+              undefined,
+              undefined,
+              workspacePath,
+            );
+            const path = `${kcpUrl}/apis/${gvr.group}/${gvr.version}/${gvr.plural}`;
+            this.logger.debug(`list kcp url: ${path}`);
+            context.setUrl(path);
+            return context;
+          },
+          post: async (context) => context,
+        }),
+      ],
+    })) as { items: unknown[] };
+  }
+
+  public async createClusterCustomObject(
+    gvr: K8sResourceDescriptor,
+    workspacePath: string,
+    body: object,
+  ): Promise<unknown> {
+    return this.k8sCustomObjectsApi.createClusterCustomObject(
+      { ...gvr, body },
+      {
+        middleware: [
+          new PromiseMiddlewareWrapper({
+            pre: async (context) => {
+              const kcpUrl = this.getKcpWorkspaceUrl(
+                undefined,
+                undefined,
+                workspacePath,
+              );
+              const path = `${kcpUrl}/apis/${gvr.group}/${gvr.version}/${gvr.plural}`;
+              this.logger.debug(`create kcp url: ${path}`);
+              context.setUrl(path);
+              return context;
+            },
+            post: async (context) => context,
+          }),
+        ],
+      },
+    );
+  }
+
+  public async deleteClusterCustomObject(
+    gvr: K8sResourceDescriptor,
+    workspacePath: string,
+    name: string,
+  ): Promise<void> {
+    const gvrWithName: K8sResourceDescriptor & { name: string } = { ...gvr, name };
+    await this.k8sCustomObjectsApi.deleteClusterCustomObject(gvrWithName, {
+      middleware: [
+        new PromiseMiddlewareWrapper({
+          pre: async (context) => {
+            const kcpUrl = this.getKcpWorkspaceUrl(
+              undefined,
+              undefined,
+              workspacePath,
+            );
+            const path = `${kcpUrl}/apis/${gvr.group}/${gvr.version}/${gvr.plural}/${name}`;
+            this.logger.debug(`delete kcp url: ${path}`);
+            context.setUrl(path);
+            return context;
+          },
+          post: async (context) => context,
+        }),
+      ],
+    });
+  }
+
   public async getClientSecret(secretName: string) {
     const namespace = 'default';
 
