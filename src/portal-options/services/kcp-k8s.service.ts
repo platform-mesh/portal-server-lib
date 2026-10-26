@@ -171,27 +171,31 @@ export class KcpKubernetesService {
     });
   }
 
+  private buildWorkspaceMiddleware(workspacePath: string, resourcePath: string, label: string) {
+    return [
+      new PromiseMiddlewareWrapper({
+        pre: async (context) => {
+          const kcpUrl = this.getKcpWorkspaceUrl(undefined, undefined, workspacePath);
+          const path = `${kcpUrl}${resourcePath}`;
+          this.logger.log(`${label} kcp url: ${path}`);
+          context.setUrl(path);
+          return context;
+        },
+        post: async (context) => context,
+      }),
+    ];
+  }
+
   public async listClusterCustomObjects(
     gvr: K8sResourceDescriptor,
     workspacePath: string,
   ): Promise<{ items: unknown[] }> {
     return (await this.k8sCustomObjectsApi.listClusterCustomObject(gvr, {
-      middleware: [
-        new PromiseMiddlewareWrapper({
-          pre: async (context) => {
-            const kcpUrl = this.getKcpWorkspaceUrl(
-              undefined,
-              undefined,
-              workspacePath,
-            );
-            const path = `${kcpUrl}/apis/${gvr.group}/${gvr.version}/${gvr.plural}`;
-            this.logger.debug(`list kcp url: ${path}`);
-            context.setUrl(path);
-            return context;
-          },
-          post: async (context) => context,
-        }),
-      ],
+      middleware: this.buildWorkspaceMiddleware(
+        workspacePath,
+        `/apis/${gvr.group}/${gvr.version}/${gvr.plural}`,
+        'list',
+      ),
     })) as { items: unknown[] };
   }
 
@@ -203,22 +207,11 @@ export class KcpKubernetesService {
     return this.k8sCustomObjectsApi.createClusterCustomObject(
       { ...gvr, body },
       {
-        middleware: [
-          new PromiseMiddlewareWrapper({
-            pre: async (context) => {
-              const kcpUrl = this.getKcpWorkspaceUrl(
-                undefined,
-                undefined,
-                workspacePath,
-              );
-              const path = `${kcpUrl}/apis/${gvr.group}/${gvr.version}/${gvr.plural}`;
-              this.logger.debug(`create kcp url: ${path}`);
-              context.setUrl(path);
-              return context;
-            },
-            post: async (context) => context,
-          }),
-        ],
+        middleware: this.buildWorkspaceMiddleware(
+          workspacePath,
+          `/apis/${gvr.group}/${gvr.version}/${gvr.plural}`,
+          'create',
+        ),
       },
     );
   }
@@ -230,22 +223,11 @@ export class KcpKubernetesService {
   ): Promise<void> {
     const gvrWithName: K8sResourceDescriptor & { name: string } = { ...gvr, name };
     await this.k8sCustomObjectsApi.deleteClusterCustomObject(gvrWithName, {
-      middleware: [
-        new PromiseMiddlewareWrapper({
-          pre: async (context) => {
-            const kcpUrl = this.getKcpWorkspaceUrl(
-              undefined,
-              undefined,
-              workspacePath,
-            );
-            const path = `${kcpUrl}/apis/${gvr.group}/${gvr.version}/${gvr.plural}/${name}`;
-            this.logger.debug(`delete kcp url: ${path}`);
-            context.setUrl(path);
-            return context;
-          },
-          post: async (context) => context,
-        }),
-      ],
+      middleware: this.buildWorkspaceMiddleware(
+        workspacePath,
+        `/apis/${gvr.group}/${gvr.version}/${gvr.plural}/${name}`,
+        'delete',
+      ),
     });
   }
 
