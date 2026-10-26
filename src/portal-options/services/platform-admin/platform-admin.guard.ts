@@ -32,27 +32,27 @@ export class PlatformAdminGuard implements CanActivate {
       throw new UnauthorizedException();
     }
 
-    let permissions;
-    try {
-      permissions = await this.authzWebhook.checkActionsForInstance({
-        token,
-        // Empty strings → buildWorkspacePath skips them → root:orgs
-        organization: '',
-        accountPath: '',
-        checks: [
-          {
-            resource: ACCOUNTS_RESOURCE,
-            group: ACCOUNTS_GROUP,
-            actions: [DELETE_VERB],
-          },
-        ],
-      });
-    } catch (err) {
-      this.logger.debug('Platform-admin authz check failed', err);
+    // checkActionsForInstance returns undefined when no webhook URL is configured
+    const permissions = await this.authzWebhook.checkActionsForInstance({
+      token,
+      // Empty strings → buildWorkspacePath skips them → root:orgs
+      organization: '',
+      accountPath: '',
+      checks: [
+        {
+          resource: ACCOUNTS_RESOURCE,
+          group: ACCOUNTS_GROUP,
+          actions: [DELETE_VERB],
+        },
+      ],
+    });
+
+    if (!permissions) {
+      this.logger.warn('Platform-admin authz check returned no permissions — webhook may be unavailable');
       throw new ForbiddenException();
     }
 
-    const hasAccess = permissions?.some(
+    const hasAccess = permissions.some(
       (p) => p.resource === ACCOUNTS_RESOURCE && p.actions.includes(DELETE_VERB),
     );
 

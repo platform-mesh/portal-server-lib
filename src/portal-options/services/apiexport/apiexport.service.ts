@@ -26,7 +26,7 @@ export class ApiExportService {
     ]);
 
     if (apiExportsResult.status === 'rejected') {
-      this.logger.debug('Failed to list APIExports from providers workspace', apiExportsResult.reason);
+      this.logger.warn('Failed to list APIExports from providers workspace', apiExportsResult.reason);
       return [];
     }
 
@@ -37,7 +37,7 @@ export class ApiExportService {
       const policies = (policiesResult.value.items ?? []) as ApiExportPolicy[];
       enabledNames = new Set(policies.map((p) => p.spec?.apiExportRef?.name).filter(Boolean));
     } else {
-      this.logger.debug('Failed to list APIExportPolicies for org, defaulting to all disabled', policiesResult.reason);
+      this.logger.warn('Failed to list APIExportPolicies for org, defaulting to all disabled', policiesResult.reason);
     }
 
     return exports.map((e) => ({ ...e, enabled: enabledNames.has(e.metadata.name) }));
@@ -47,7 +47,7 @@ export class ApiExportService {
     const orgWorkspacePath = buildWorkspacePath([organization]);
     const body: ApiExportPolicy = {
       apiVersion: `${GVR_POLICY.group}/${GVR_POLICY.version}`,
-      kind: 'ApiExportPolicy',
+      kind: 'APIExportPolicy',
       metadata: { name },
       spec: { apiExportRef: { name } },
     };
@@ -55,7 +55,7 @@ export class ApiExportService {
     try {
       await this.kcpK8s.createClusterCustomObject(GVR_POLICY, orgWorkspacePath, body);
     } catch (err) {
-      this.logger.debug(`Failed to enable APIExport "${name}" for org "${organization}"`, err);
+      this.logger.warn(`Failed to enable APIExport "${name}" for org "${organization}"`, err);
       throw err;
     }
   }
@@ -66,7 +66,7 @@ export class ApiExportService {
     try {
       await this.kcpK8s.deleteClusterCustomObject(GVR_POLICY, orgWorkspacePath, name);
     } catch (err) {
-      this.logger.debug(`Failed to disable APIExport "${name}" for org "${organization}"`, err);
+      this.logger.warn(`Failed to disable APIExport "${name}" for org "${organization}"`, err);
       throw err;
     }
   }

@@ -1,4 +1,4 @@
-import { NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, NotFoundException } from '@nestjs/common';
 import { mock } from 'jest-mock-extended';
 import { ApiExportService } from './apiexport.service.js';
 import { ApiExportController } from './apiexport.controller.js';
@@ -42,6 +42,14 @@ describe('ApiExportController', () => {
       expect(result).toEqual({ items: exports });
       expect(apiExportService.listApiExports).toHaveBeenCalledWith(ORG);
     });
+
+    it('throws BadRequestException when organization is missing', async () => {
+      await expect(controller.listApiExports(undefined as unknown as string)).rejects.toThrow(BadRequestException);
+    });
+
+    it('throws BadRequestException when organization contains invalid characters', async () => {
+      await expect(controller.listApiExports('root:orgs')).rejects.toThrow(BadRequestException);
+    });
   });
 
   describe('enableApiExport', () => {
@@ -51,9 +59,26 @@ describe('ApiExportController', () => {
       expect(apiExportService.enableApiExport).toHaveBeenCalledWith(ORG, 'alpha');
     });
 
-    it('throws NotFoundException on service error', async () => {
-      (apiExportService.enableApiExport as jest.Mock).mockRejectedValue(new Error('conflict'));
+    it('throws BadRequestException when organization is missing', async () => {
+      await expect(controller.enableApiExport(undefined as unknown as string, 'alpha')).rejects.toThrow(BadRequestException);
+    });
+
+    it('throws NotFoundException when service returns 404', async () => {
+      const err = Object.assign(new Error('not found'), { statusCode: 404 });
+      (apiExportService.enableApiExport as jest.Mock).mockRejectedValue(err);
       await expect(controller.enableApiExport(ORG, 'alpha')).rejects.toThrow(NotFoundException);
+    });
+
+    it('throws ConflictException when service returns 409', async () => {
+      const err = Object.assign(new Error('conflict'), { statusCode: 409 });
+      (apiExportService.enableApiExport as jest.Mock).mockRejectedValue(err);
+      await expect(controller.enableApiExport(ORG, 'alpha')).rejects.toThrow(ConflictException);
+    });
+
+    it('rethrows unexpected errors', async () => {
+      const err = new Error('internal error');
+      (apiExportService.enableApiExport as jest.Mock).mockRejectedValue(err);
+      await expect(controller.enableApiExport(ORG, 'alpha')).rejects.toThrow(err);
     });
   });
 
@@ -64,9 +89,20 @@ describe('ApiExportController', () => {
       expect(apiExportService.disableApiExport).toHaveBeenCalledWith(ORG, 'alpha');
     });
 
-    it('throws NotFoundException on service error', async () => {
-      (apiExportService.disableApiExport as jest.Mock).mockRejectedValue(new Error('not found'));
+    it('throws BadRequestException when organization is missing', async () => {
+      await expect(controller.disableApiExport(undefined as unknown as string, 'alpha')).rejects.toThrow(BadRequestException);
+    });
+
+    it('throws NotFoundException when service returns 404', async () => {
+      const err = Object.assign(new Error('not found'), { statusCode: 404 });
+      (apiExportService.disableApiExport as jest.Mock).mockRejectedValue(err);
       await expect(controller.disableApiExport(ORG, 'alpha')).rejects.toThrow(NotFoundException);
+    });
+
+    it('rethrows unexpected errors', async () => {
+      const err = new Error('internal error');
+      (apiExportService.disableApiExport as jest.Mock).mockRejectedValue(err);
+      await expect(controller.disableApiExport(ORG, 'alpha')).rejects.toThrow(err);
     });
   });
 });

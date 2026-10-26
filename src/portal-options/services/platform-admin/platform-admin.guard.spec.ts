@@ -47,9 +47,9 @@ describe('PlatformAdminGuard', () => {
     await expect(guard.canActivate(makeContext('Bearer tok'))).rejects.toThrow(ForbiddenException);
   });
 
-  it('throws ForbiddenException when authz webhook throws', async () => {
+  it('throws ForbiddenException when authz webhook returns undefined (webhook unavailable)', async () => {
     (headerParser.extractBearerToken as jest.Mock).mockReturnValue('tok');
-    (authzWebhook.checkActionsForInstance as jest.Mock).mockRejectedValue(new Error('network'));
+    (authzWebhook.checkActionsForInstance as jest.Mock).mockResolvedValue(undefined);
     await expect(guard.canActivate(makeContext('Bearer tok'))).rejects.toThrow(ForbiddenException);
   });
 
