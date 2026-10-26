@@ -1,6 +1,6 @@
 {
   "name": "@platform-mesh/portal-server-lib",
-  "version": "0.11.5",
+  "version": "0.11.8",
   "author": "Platform Mesh",
   "license": "Apache-2.0",
   "publishConfig": {
@@ -89,6 +89,6 @@
     "lodash-es": "^4.18.1",
     "picomatch": "^4.0.4",
     "uuid": "^11.1.1",
-    "multer": "2.4.0"
+    "multer": "2.5.0"
   }
 }
