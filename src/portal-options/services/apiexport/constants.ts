@@ -21,3 +21,9 @@ export const GVR_POLICY: K8sResourceDescriptor = {
   version: POLICY_VERSION,
   plural: POLICY_PLURAL,
 };
+
+export const GVR_WORKSPACE: K8sResourceDescriptor = {
+  group: 'tenancy.kcp.io',
+  version: 'v1alpha1',
+  plural: 'workspaces',
+};

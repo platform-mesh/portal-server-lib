@@ -14,15 +14,16 @@ import {
 } from '@nestjs/common';
 import { PlatformAdminGuard } from '../platform-admin/platform-admin.guard.js';
 import { ApiExportService } from './apiexport.service.js';
+import { WORKSPACE_PROVIDERS } from './constants.js';
 import { ApiExportListResponse } from './models/apiexport.model.js';
 
 // Kubernetes name: lowercase alphanumeric and hyphens, start/end with alphanumeric
 const K8S_NAME_PATTERN = /^[a-z0-9]([a-z0-9-]*[a-z0-9])?$/;
 
-function validateOrganization(organization: string | undefined): void {
-  if (!organization || !K8S_NAME_PATTERN.test(organization)) {
+function validateK8sName(value: string | undefined, paramName: string): void {
+  if (!value || !K8S_NAME_PATTERN.test(value)) {
     throw new BadRequestException(
-      'organization query parameter is required and must be a valid Kubernetes name',
+      `${paramName} query parameter is required and must be a valid Kubernetes name`,
     );
   }
 }
@@ -36,7 +37,7 @@ export class ApiExportController {
   async listApiExports(
     @Query('organization') organization: string,
   ): Promise<ApiExportListResponse> {
-    validateOrganization(organization);
+    validateK8sName(organization, 'organization');
     const items = await this.apiExportService.listApiExports(organization);
     return { items };
   }
@@ -45,11 +46,14 @@ export class ApiExportController {
   @Post('apiexports/:name/enable')
   async enableApiExport(
     @Query('organization') organization: string,
+    @Query('providerWorkspace') providerWorkspace: string,
     @Param('name') name: string,
   ): Promise<void> {
-    validateOrganization(organization);
+    validateK8sName(organization, 'organization');
+    validateK8sName(providerWorkspace, 'providerWorkspace');
+    const clusterPath = `${WORKSPACE_PROVIDERS}:${providerWorkspace}`;
     try {
-      await this.apiExportService.enableApiExport(organization, name);
+      await this.apiExportService.enableApiExport(organization, name, clusterPath);
     } catch (err: unknown) {
       const status = (err as { statusCode?: number })?.statusCode;
       if (status === 404) throw new NotFoundException(`APIExport "${name}" not found`);
@@ -64,7 +68,7 @@ export class ApiExportController {
     @Query('organization') organization: string,
     @Param('name') name: string,
   ): Promise<void> {
-    validateOrganization(organization);
+    validateK8sName(organization, 'organization');
     try {
       await this.apiExportService.disableApiExport(organization, name);
     } catch (err: unknown) {

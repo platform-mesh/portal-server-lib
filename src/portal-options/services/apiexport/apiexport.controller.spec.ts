@@ -2,6 +2,7 @@ import { BadRequestException, ConflictException, NotFoundException } from '@nest
 import { mock } from 'jest-mock-extended';
 import { ApiExportService } from './apiexport.service.js';
 import { ApiExportController } from './apiexport.controller.js';
+import { WORKSPACE_PROVIDERS } from './constants.js';
 
 jest.mock('@kubernetes/client-node', () => {
   class KubeConfig {
@@ -22,6 +23,8 @@ jest.mock('@kubernetes/client-node/dist/gen/middleware.js', () => ({
 }));
 
 const ORG = 'test-org';
+const PROVIDER_WS_SEGMENT = 'httpbin';
+const PROVIDER_WS = `${WORKSPACE_PROVIDERS}:${PROVIDER_WS_SEGMENT}`;
 
 describe('ApiExportController', () => {
   let controller: ApiExportController;
@@ -34,7 +37,7 @@ describe('ApiExportController', () => {
 
   describe('listApiExports', () => {
     it('returns items from service', async () => {
-      const exports = [{ apiVersion: 'apis.kcp.io/v1alpha1', kind: 'APIExport', metadata: { name: 'alpha' }, enabled: true }];
+      const exports = [{ apiVersion: 'apis.kcp.io/v1alpha1', kind: 'APIExport', metadata: { name: 'alpha' }, enabled: true, clusterPath: PROVIDER_WS }];
       (apiExportService.listApiExports as jest.Mock).mockResolvedValue(exports);
 
       const result = await controller.listApiExports(ORG);
@@ -53,32 +56,38 @@ describe('ApiExportController', () => {
   });
 
   describe('enableApiExport', () => {
-    it('calls service and returns no content', async () => {
+    it('calls service with clusterPath and returns no content', async () => {
       (apiExportService.enableApiExport as jest.Mock).mockResolvedValue(undefined);
-      await expect(controller.enableApiExport(ORG, 'alpha')).resolves.toBeUndefined();
-      expect(apiExportService.enableApiExport).toHaveBeenCalledWith(ORG, 'alpha');
+
+      await expect(controller.enableApiExport(ORG, PROVIDER_WS_SEGMENT, 'alpha')).resolves.toBeUndefined();
+
+      expect(apiExportService.enableApiExport).toHaveBeenCalledWith(ORG, 'alpha', PROVIDER_WS);
     });
 
     it('throws BadRequestException when organization is missing', async () => {
-      await expect(controller.enableApiExport(undefined as unknown as string, 'alpha')).rejects.toThrow(BadRequestException);
+      await expect(controller.enableApiExport(undefined as unknown as string, PROVIDER_WS_SEGMENT, 'alpha')).rejects.toThrow(BadRequestException);
+    });
+
+    it('throws BadRequestException when providerWorkspace is missing', async () => {
+      await expect(controller.enableApiExport(ORG, undefined as unknown as string, 'alpha')).rejects.toThrow(BadRequestException);
     });
 
     it('throws NotFoundException when service returns 404', async () => {
       const err = Object.assign(new Error('not found'), { statusCode: 404 });
       (apiExportService.enableApiExport as jest.Mock).mockRejectedValue(err);
-      await expect(controller.enableApiExport(ORG, 'alpha')).rejects.toThrow(NotFoundException);
+      await expect(controller.enableApiExport(ORG, PROVIDER_WS_SEGMENT, 'alpha')).rejects.toThrow(NotFoundException);
     });
 
     it('throws ConflictException when service returns 409', async () => {
       const err = Object.assign(new Error('conflict'), { statusCode: 409 });
       (apiExportService.enableApiExport as jest.Mock).mockRejectedValue(err);
-      await expect(controller.enableApiExport(ORG, 'alpha')).rejects.toThrow(ConflictException);
+      await expect(controller.enableApiExport(ORG, PROVIDER_WS_SEGMENT, 'alpha')).rejects.toThrow(ConflictException);
     });
 
     it('rethrows unexpected errors', async () => {
       const err = new Error('internal error');
       (apiExportService.enableApiExport as jest.Mock).mockRejectedValue(err);
-      await expect(controller.enableApiExport(ORG, 'alpha')).rejects.toThrow(err);
+      await expect(controller.enableApiExport(ORG, PROVIDER_WS_SEGMENT, 'alpha')).rejects.toThrow(err);
     });
   });
 

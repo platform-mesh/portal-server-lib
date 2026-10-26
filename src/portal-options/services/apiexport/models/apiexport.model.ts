@@ -34,10 +34,12 @@ export interface ApiExport {
   spec?: ApiExportSpec;
   status?: ApiExportStatus;
   enabled?: boolean;
+  clusterPath?: string;
 }
 
 export interface ApiExportPolicySpec {
-  apiExportRef: { name: string };
+  apiExportRef: { name: string; clusterPath?: string };
+  allowPathExpressions?: string[];
 }
 
 export interface ApiExportPolicy {
