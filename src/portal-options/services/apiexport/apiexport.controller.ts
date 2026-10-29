@@ -1,32 +1,17 @@
 import {
   BadRequestException,
-  ConflictException,
+  Body,
   Controller,
-  Delete,
   Get,
   HttpCode,
   HttpStatus,
-  NotFoundException,
   Param,
-  Post,
-  Query,
+  Put,
   UseGuards,
 } from '@nestjs/common';
 import { PlatformAdminGuard } from '../platform-admin/platform-admin.guard.js';
 import { ApiExportService } from './apiexport.service.js';
-import { WORKSPACE_PROVIDERS } from './constants.js';
-import { ApiExportListResponse } from './models/apiexport.model.js';
-
-// Kubernetes name: lowercase alphanumeric and hyphens, start/end with alphanumeric
-const K8S_NAME_PATTERN = /^[a-z0-9]([a-z0-9-]*[a-z0-9])?$/;
-
-function validateK8sName(value: string | undefined, paramName: string): void {
-  if (!value || !K8S_NAME_PATTERN.test(value)) {
-    throw new BadRequestException(
-      `${paramName} query parameter is required and must be a valid Kubernetes name`,
-    );
-  }
-}
+import { ApiExportListResponse, SetApiExportPolicyRequest } from './models/apiexport.model.js';
 
 @Controller('rest/admin')
 @UseGuards(PlatformAdminGuard)
@@ -34,47 +19,27 @@ export class ApiExportController {
   constructor(private readonly apiExportService: ApiExportService) {}
 
   @Get('apiexports')
-  async listApiExports(
-    @Query('organization') organization: string,
-  ): Promise<ApiExportListResponse> {
-    validateK8sName(organization, 'organization');
-    const items = await this.apiExportService.listApiExports(organization);
+  async listApiExports(): Promise<ApiExportListResponse> {
+    const items = await this.apiExportService.listApiExports();
     return { items };
   }
 
   @HttpCode(HttpStatus.NO_CONTENT)
-  @Post('apiexports/:name/enable')
-  async enableApiExport(
-    @Query('organization') organization: string,
-    @Query('providerWorkspace') providerWorkspace: string,
+  @Put('apiexports/:name/policy')
+  async setApiExportPolicy(
     @Param('name') name: string,
+    @Body() body: unknown,
   ): Promise<void> {
-    validateK8sName(organization, 'organization');
-    validateK8sName(providerWorkspace, 'providerWorkspace');
-    const clusterPath = `${WORKSPACE_PROVIDERS}:${providerWorkspace}`;
-    try {
-      await this.apiExportService.enableApiExport(organization, name, clusterPath);
-    } catch (err: unknown) {
-      const status = (err as { statusCode?: number })?.statusCode;
-      if (status === 404) throw new NotFoundException(`APIExport "${name}" not found`);
-      if (status === 409) throw new ConflictException(`APIExport "${name}" is already enabled`);
-      throw err;
+    if (!body || typeof body !== 'object') {
+      throw new BadRequestException('Request body must be a JSON object');
     }
-  }
-
-  @HttpCode(HttpStatus.NO_CONTENT)
-  @Delete('apiexports/:name/enable')
-  async disableApiExport(
-    @Query('organization') organization: string,
-    @Param('name') name: string,
-  ): Promise<void> {
-    validateK8sName(organization, 'organization');
-    try {
-      await this.apiExportService.disableApiExport(organization, name);
-    } catch (err: unknown) {
-      const status = (err as { statusCode?: number })?.statusCode;
-      if (status === 404) throw new NotFoundException(`APIExport "${name}" not found or not enabled`);
-      throw err;
+    const req = body as SetApiExportPolicyRequest;
+    if (typeof req.clusterPath !== 'string') {
+      throw new BadRequestException('clusterPath must be a string');
     }
+    if (!Array.isArray(req.allowRules)) {
+      throw new BadRequestException('allowRules must be an array');
+    }
+    await this.apiExportService.setApiExportPolicy(name, req);
   }
 }

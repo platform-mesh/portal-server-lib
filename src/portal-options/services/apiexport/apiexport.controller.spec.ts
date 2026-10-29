@@ -1,8 +1,15 @@
-import { BadRequestException, ConflictException, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  InternalServerErrorException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { mock } from 'jest-mock-extended';
 import { ApiExportService } from './apiexport.service.js';
 import { ApiExportController } from './apiexport.controller.js';
-import { WORKSPACE_PROVIDERS } from './constants.js';
+import { PlatformAdminGuard } from '../platform-admin/platform-admin.guard.js';
+import { AuthzWebhookService } from '../permissions/adapters/authz-webhook.service.js';
+import { HeaderParserService } from '@openmfp/portal-server-lib';
 
 jest.mock('@kubernetes/client-node', () => {
   class KubeConfig {
@@ -22,10 +29,6 @@ jest.mock('@kubernetes/client-node/dist/gen/middleware.js', () => ({
   PromiseMiddlewareWrapper: jest.fn(),
 }));
 
-const ORG = 'test-org';
-const PROVIDER_WS_SEGMENT = 'httpbin';
-const PROVIDER_WS = `${WORKSPACE_PROVIDERS}:${PROVIDER_WS_SEGMENT}`;
-
 describe('ApiExportController', () => {
   let controller: ApiExportController;
   const apiExportService = mock<ApiExportService>();
@@ -37,81 +40,120 @@ describe('ApiExportController', () => {
 
   describe('listApiExports', () => {
     it('returns items from service', async () => {
-      const exports = [{ apiVersion: 'apis.kcp.io/v1alpha1', kind: 'APIExport', metadata: { name: 'alpha' }, enabled: true, clusterPath: PROVIDER_WS }];
+      const exports = [
+        {
+          metadata: { name: 'alpha' },
+          clusterPath: 'root:providers:httpbin',
+          allowRules: [{ path: 'root:orgs:demo', includeDescendants: false }],
+        },
+      ];
       (apiExportService.listApiExports as jest.Mock).mockResolvedValue(exports);
 
-      const result = await controller.listApiExports(ORG);
+      const result = await controller.listApiExports();
 
       expect(result).toEqual({ items: exports });
-      expect(apiExportService.listApiExports).toHaveBeenCalledWith(ORG);
+      expect(apiExportService.listApiExports).toHaveBeenCalledWith();
     });
 
-    it('throws BadRequestException when organization is missing', async () => {
-      await expect(controller.listApiExports(undefined as unknown as string)).rejects.toThrow(BadRequestException);
-    });
-
-    it('throws BadRequestException when organization contains invalid characters', async () => {
-      await expect(controller.listApiExports('root:orgs')).rejects.toThrow(BadRequestException);
-    });
-  });
-
-  describe('enableApiExport', () => {
-    it('calls service with clusterPath and returns no content', async () => {
-      (apiExportService.enableApiExport as jest.Mock).mockResolvedValue(undefined);
-
-      await expect(controller.enableApiExport(ORG, PROVIDER_WS_SEGMENT, 'alpha')).resolves.toBeUndefined();
-
-      expect(apiExportService.enableApiExport).toHaveBeenCalledWith(ORG, 'alpha', PROVIDER_WS);
-    });
-
-    it('throws BadRequestException when organization is missing', async () => {
-      await expect(controller.enableApiExport(undefined as unknown as string, PROVIDER_WS_SEGMENT, 'alpha')).rejects.toThrow(BadRequestException);
-    });
-
-    it('throws BadRequestException when providerWorkspace is missing', async () => {
-      await expect(controller.enableApiExport(ORG, undefined as unknown as string, 'alpha')).rejects.toThrow(BadRequestException);
-    });
-
-    it('throws NotFoundException when service returns 404', async () => {
-      const err = Object.assign(new Error('not found'), { statusCode: 404 });
-      (apiExportService.enableApiExport as jest.Mock).mockRejectedValue(err);
-      await expect(controller.enableApiExport(ORG, PROVIDER_WS_SEGMENT, 'alpha')).rejects.toThrow(NotFoundException);
-    });
-
-    it('throws ConflictException when service returns 409', async () => {
-      const err = Object.assign(new Error('conflict'), { statusCode: 409 });
-      (apiExportService.enableApiExport as jest.Mock).mockRejectedValue(err);
-      await expect(controller.enableApiExport(ORG, PROVIDER_WS_SEGMENT, 'alpha')).rejects.toThrow(ConflictException);
-    });
-
-    it('rethrows unexpected errors', async () => {
-      const err = new Error('internal error');
-      (apiExportService.enableApiExport as jest.Mock).mockRejectedValue(err);
-      await expect(controller.enableApiExport(ORG, PROVIDER_WS_SEGMENT, 'alpha')).rejects.toThrow(err);
+    it('propagates service errors', async () => {
+      (apiExportService.listApiExports as jest.Mock).mockRejectedValue(
+        new InternalServerErrorException('kcp down'),
+      );
+      await expect(controller.listApiExports()).rejects.toThrow(InternalServerErrorException);
     });
   });
 
-  describe('disableApiExport', () => {
-    it('calls service and returns no content', async () => {
-      (apiExportService.disableApiExport as jest.Mock).mockResolvedValue(undefined);
-      await expect(controller.disableApiExport(ORG, 'alpha')).resolves.toBeUndefined();
-      expect(apiExportService.disableApiExport).toHaveBeenCalledWith(ORG, 'alpha');
+  describe('setApiExportPolicy', () => {
+    const validBody = {
+      clusterPath: 'root:providers:httpbin',
+      allowRules: [{ path: 'root:orgs:demo', includeDescendants: false }],
+    };
+
+    it('calls service with name and body', async () => {
+      (apiExportService.setApiExportPolicy as jest.Mock).mockResolvedValue(undefined);
+
+      await expect(controller.setApiExportPolicy('alpha', validBody)).resolves.toBeUndefined();
+      expect(apiExportService.setApiExportPolicy).toHaveBeenCalledWith('alpha', validBody);
     });
 
-    it('throws BadRequestException when organization is missing', async () => {
-      await expect(controller.disableApiExport(undefined as unknown as string, 'alpha')).rejects.toThrow(BadRequestException);
+    it('rejects non-object body', async () => {
+      await expect(controller.setApiExportPolicy('alpha', null)).rejects.toThrow(BadRequestException);
+      await expect(controller.setApiExportPolicy('alpha', 'string')).rejects.toThrow(BadRequestException);
     });
 
-    it('throws NotFoundException when service returns 404', async () => {
-      const err = Object.assign(new Error('not found'), { statusCode: 404 });
-      (apiExportService.disableApiExport as jest.Mock).mockRejectedValue(err);
-      await expect(controller.disableApiExport(ORG, 'alpha')).rejects.toThrow(NotFoundException);
+    it('rejects body without clusterPath string', async () => {
+      await expect(
+        controller.setApiExportPolicy('alpha', { clusterPath: 123, allowRules: [] }),
+      ).rejects.toThrow(BadRequestException);
     });
 
-    it('rethrows unexpected errors', async () => {
-      const err = new Error('internal error');
-      (apiExportService.disableApiExport as jest.Mock).mockRejectedValue(err);
-      await expect(controller.disableApiExport(ORG, 'alpha')).rejects.toThrow(err);
+    it('rejects body without allowRules array', async () => {
+      await expect(
+        controller.setApiExportPolicy('alpha', { clusterPath: 'root:providers:x', allowRules: null }),
+      ).rejects.toThrow(BadRequestException);
     });
+
+    it('propagates service errors unchanged', async () => {
+      (apiExportService.setApiExportPolicy as jest.Mock).mockRejectedValue(
+        new InternalServerErrorException('unexpected'),
+      );
+      await expect(controller.setApiExportPolicy('alpha', validBody)).rejects.toThrow(
+        InternalServerErrorException,
+      );
+    });
+
+    it('accepts empty allowRules (delete intent)', async () => {
+      (apiExportService.setApiExportPolicy as jest.Mock).mockResolvedValue(undefined);
+      await expect(
+        controller.setApiExportPolicy('alpha', { clusterPath: 'root:providers:httpbin', allowRules: [] }),
+      ).resolves.toBeUndefined();
+    });
+  });
+});
+
+describe('PlatformAdminGuard', () => {
+  const authzWebhook = mock<AuthzWebhookService>();
+  const headerParser = mock<HeaderParserService>();
+
+  let guard: PlatformAdminGuard;
+
+  beforeEach(() => {
+    jest.resetAllMocks();
+    guard = new PlatformAdminGuard(authzWebhook, headerParser);
+  });
+
+  const makeContext = (token: string | undefined) => ({
+    switchToHttp: () => ({
+      getRequest: () => ({ headers: { authorization: token ? `Bearer ${token}` : undefined } }),
+    }),
+  });
+
+  it('throws UnauthorizedException when no token', async () => {
+    (headerParser.extractBearerToken as jest.Mock).mockReturnValue(undefined);
+    await expect(guard.canActivate(makeContext(undefined) as any)).rejects.toThrow(
+      UnauthorizedException,
+    );
+  });
+
+  it('throws ForbiddenException when webhook returns undefined (unavailable)', async () => {
+    (headerParser.extractBearerToken as jest.Mock).mockReturnValue('tok');
+    (authzWebhook.checkActionsForInstance as jest.Mock).mockResolvedValue(undefined);
+    await expect(guard.canActivate(makeContext('tok') as any)).rejects.toThrow(ForbiddenException);
+  });
+
+  it('throws ForbiddenException when permissions do not include delete accounts', async () => {
+    (headerParser.extractBearerToken as jest.Mock).mockReturnValue('tok');
+    (authzWebhook.checkActionsForInstance as jest.Mock).mockResolvedValue([
+      { resource: 'accounts', actions: ['get'] },
+    ]);
+    await expect(guard.canActivate(makeContext('tok') as any)).rejects.toThrow(ForbiddenException);
+  });
+
+  it('returns true when delete accounts permission is granted', async () => {
+    (headerParser.extractBearerToken as jest.Mock).mockReturnValue('tok');
+    (authzWebhook.checkActionsForInstance as jest.Mock).mockResolvedValue([
+      { resource: 'accounts', actions: ['delete'] },
+    ]);
+    await expect(guard.canActivate(makeContext('tok') as any)).resolves.toBe(true);
   });
 });

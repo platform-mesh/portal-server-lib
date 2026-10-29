@@ -171,19 +171,21 @@ export class KcpKubernetesService {
     });
   }
 
-  private buildWorkspaceMiddleware(workspacePath: string, resourcePath: string, label: string) {
-    return [
-      new PromiseMiddlewareWrapper({
-        pre: async (context) => {
-          const kcpUrl = this.getKcpWorkspaceUrl(undefined, undefined, workspacePath);
-          const path = `${kcpUrl}${resourcePath}`;
-          this.logger.log(`${label} kcp url: ${path}`);
-          context.setUrl(path);
-          return context;
-        },
-        post: async (context) => context,
-      }),
-    ];
+  private workspaceMiddleware(
+    workspacePath: string,
+    buildResourcePath: (baseUrl: URL) => string,
+    label: string,
+  ) {
+    return new PromiseMiddlewareWrapper({
+      pre: async (context) => {
+        const kcpUrl = this.getKcpWorkspaceUrl(undefined, undefined, workspacePath);
+        const path = buildResourcePath(kcpUrl);
+        this.logger.debug(`${label} kcp url: ${path}`);
+        context.setUrl(path);
+        return context;
+      },
+      post: async (context) => context,
+    });
   }
 
   public async listClusterCustomObjects(
@@ -191,12 +193,32 @@ export class KcpKubernetesService {
     workspacePath: string,
   ): Promise<{ items: unknown[] }> {
     return (await this.k8sCustomObjectsApi.listClusterCustomObject(gvr, {
-      middleware: this.buildWorkspaceMiddleware(
-        workspacePath,
-        `/apis/${gvr.group}/${gvr.version}/${gvr.plural}`,
-        'list',
-      ),
+      middleware: [
+        this.workspaceMiddleware(
+          workspacePath,
+          (url) => `${url}/apis/${gvr.group}/${gvr.version}/${gvr.plural}`,
+          'list',
+        ),
+      ],
     })) as { items: unknown[] };
+  }
+
+  public async getClusterCustomObject(
+    gvr: K8sResourceDescriptor,
+    workspacePath: string,
+    name: string,
+  ): Promise<unknown> {
+    const gvrWithName: K8sResourceDescriptor & { name: string } = { ...gvr, name };
+    return this.k8sCustomObjectsApi.getClusterCustomObject(gvrWithName, {
+      middleware: [
+        this.workspaceMiddleware(
+          workspacePath,
+          (url) =>
+            `${url}/apis/${gvr.group}/${gvr.version}/${gvr.plural}/${encodeURIComponent(name)}`,
+          'get',
+        ),
+      ],
+    });
   }
 
   public async createClusterCustomObject(
@@ -207,11 +229,34 @@ export class KcpKubernetesService {
     return this.k8sCustomObjectsApi.createClusterCustomObject(
       { ...gvr, body },
       {
-        middleware: this.buildWorkspaceMiddleware(
-          workspacePath,
-          `/apis/${gvr.group}/${gvr.version}/${gvr.plural}`,
-          'create',
-        ),
+        middleware: [
+          this.workspaceMiddleware(
+            workspacePath,
+            (url) => `${url}/apis/${gvr.group}/${gvr.version}/${gvr.plural}`,
+            'create',
+          ),
+        ],
+      },
+    );
+  }
+
+  public async replaceClusterCustomObject(
+    gvr: K8sResourceDescriptor,
+    workspacePath: string,
+    name: string,
+    body: object,
+  ): Promise<unknown> {
+    return this.k8sCustomObjectsApi.replaceClusterCustomObject(
+      { ...gvr, name, body },
+      {
+        middleware: [
+          this.workspaceMiddleware(
+            workspacePath,
+            (url) =>
+              `${url}/apis/${gvr.group}/${gvr.version}/${gvr.plural}/${encodeURIComponent(name)}`,
+            'replace',
+          ),
+        ],
       },
     );
   }
@@ -223,11 +268,14 @@ export class KcpKubernetesService {
   ): Promise<void> {
     const gvrWithName: K8sResourceDescriptor & { name: string } = { ...gvr, name };
     await this.k8sCustomObjectsApi.deleteClusterCustomObject(gvrWithName, {
-      middleware: this.buildWorkspaceMiddleware(
-        workspacePath,
-        `/apis/${gvr.group}/${gvr.version}/${gvr.plural}/${name}`,
-        'delete',
-      ),
+      middleware: [
+        this.workspaceMiddleware(
+          workspacePath,
+          (url) =>
+            `${url}/apis/${gvr.group}/${gvr.version}/${gvr.plural}/${encodeURIComponent(name)}`,
+          'delete',
+        ),
+      ],
     });
   }
 

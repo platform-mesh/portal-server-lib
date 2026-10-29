@@ -1,54 +1,88 @@
-export interface ApiExportSpec {
-  permissionClaims?: PermissionClaim[];
+// API response/request shapes
+
+export interface AllowRule {
+  path: string;
+  includeDescendants: boolean;
 }
 
-export interface PermissionClaim {
-  group?: string;
-  resource: string;
-  all?: boolean;
+export interface ApiExportAdminItem {
+  metadata: {
+    name: string;
+    annotations?: Record<string, string>;
+    labels?: Record<string, string>;
+  };
+  clusterPath: string;
+  allowRules: AllowRule[];
 }
 
-export interface ApiExportStatus {
-  identityHash?: string;
-  conditions?: Condition[];
+export interface ApiExportListResponse {
+  items: ApiExportAdminItem[];
 }
 
-export interface Condition {
-  type: string;
-  status: string;
-  lastTransitionTime?: string;
-  reason?: string;
-  message?: string;
+export interface SetApiExportPolicyRequest {
+  clusterPath: string;
+  allowRules: AllowRule[];
 }
 
-export interface ApiExport {
+// Internal CRD types — match security-operator api/v1alpha1/apiexportpolicy_types.go exactly
+
+export interface ApiExportRef {
+  name: string;
+  clusterPath: string;
+}
+
+export interface ApiExportPolicySpec {
+  apiExportRef: ApiExportRef;
+  allowPathExpressions: string[];
+}
+
+export interface ApiExportPolicyStatus {
+  conditions?: Array<{
+    type: string;
+    status: string;
+    lastTransitionTime?: string;
+    reason?: string;
+    message?: string;
+  }>;
+  managedAllowExpressions?: string[];
+}
+
+export interface ApiExportPolicyCRD {
   apiVersion: string;
   kind: string;
   metadata: {
     name: string;
-    namespace?: string;
-    creationTimestamp?: string;
+    resourceVersion?: string;
     annotations?: Record<string, string>;
     labels?: Record<string, string>;
   };
-  spec?: ApiExportSpec;
-  status?: ApiExportStatus;
-  enabled?: boolean;
-  clusterPath?: string;
+  spec: ApiExportPolicySpec;
+  status?: ApiExportPolicyStatus;
 }
 
-export interface ApiExportPolicySpec {
-  apiExportRef: { name: string; clusterPath?: string };
-  allowPathExpressions?: string[];
-}
+// KCP APIExport CRD types (apis.kcp.io/v1alpha1)
 
-export interface ApiExportPolicy {
+export interface ApiExportCRD {
   apiVersion: string;
   kind: string;
-  metadata: { name: string };
-  spec: ApiExportPolicySpec;
+  metadata: {
+    name: string;
+    annotations?: Record<string, string>;
+    labels?: Record<string, string>;
+  };
+  spec?: {
+    permissionClaims?: Array<{
+      group?: string;
+      resource: string;
+      all?: boolean;
+    }>;
+  };
 }
 
-export interface ApiExportListResponse {
-  items: ApiExport[];
+// KCP Workspace types (tenancy.kcp.io/v1alpha1)
+
+export interface KcpWorkspace {
+  metadata: {
+    name: string;
+  };
 }

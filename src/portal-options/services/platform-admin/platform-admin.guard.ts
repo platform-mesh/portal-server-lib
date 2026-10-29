@@ -32,7 +32,6 @@ export class PlatformAdminGuard implements CanActivate {
       throw new UnauthorizedException();
     }
 
-    // checkActionsForInstance returns undefined when no webhook URL is configured
     const permissions = await this.authzWebhook.checkActionsForInstance({
       token,
       // Empty strings → buildWorkspacePath skips them → root:orgs
@@ -47,8 +46,10 @@ export class PlatformAdminGuard implements CanActivate {
       ],
     });
 
-    if (!permissions) {
-      this.logger.warn('Platform-admin authz check returned no permissions — webhook may be unavailable');
+    if (permissions === undefined) {
+      this.logger.warn(
+        'Platform-admin authz check returned undefined — webhook unavailable or misconfigured, denying access',
+      );
       throw new ForbiddenException();
     }
 

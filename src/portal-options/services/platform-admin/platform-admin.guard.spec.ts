@@ -47,10 +47,10 @@ describe('PlatformAdminGuard', () => {
     await expect(guard.canActivate(makeContext('Bearer tok'))).rejects.toThrow(ForbiddenException);
   });
 
-  it('throws ForbiddenException when authz webhook returns undefined (webhook unavailable)', async () => {
+  it('propagates error when authz webhook unexpectedly throws (checkActionsForInstance cannot throw in practice)', async () => {
     (headerParser.extractBearerToken as jest.Mock).mockReturnValue('tok');
-    (authzWebhook.checkActionsForInstance as jest.Mock).mockResolvedValue(undefined);
-    await expect(guard.canActivate(makeContext('Bearer tok'))).rejects.toThrow(ForbiddenException);
+    (authzWebhook.checkActionsForInstance as jest.Mock).mockRejectedValue(new Error('network'));
+    await expect(guard.canActivate(makeContext('Bearer tok'))).rejects.toThrow(Error);
   });
 
   it('returns true when delete on accounts is allowed', async () => {

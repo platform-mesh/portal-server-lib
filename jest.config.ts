@@ -18,7 +18,7 @@ export default {
   coveragePathIgnorePatterns: ['/node_modules/', '/integration-tests/'],
   coverageDirectory: '../test-run-reports/coverage/unit',
   transformIgnorePatterns: [
-    '/node_modules/(?!(@openmfp/portal-server-lib|graphql-request)/)',
+    '/node_modules/(?!(@openmfp/portal-server-lib|graphql-request|@kubernetes/client-node)/)',
   ],
   transform: {
     '^.+\\.(t|j)s$': [
