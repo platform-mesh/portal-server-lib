@@ -3,6 +3,8 @@ import { KcpKubernetesService } from './kcp-k8s.service.js';
 import type { Request } from 'express';
 
 const mockListClusterCustomObject = jest.fn();
+const mockCreateClusterCustomObject = jest.fn();
+const mockDeleteClusterCustomObject = jest.fn();
 const mockReadNamespacedSecret = jest.fn();
 const mockMakeApiClient = jest.fn();
 const mockGetCurrentCluster = jest.fn();
@@ -14,6 +16,8 @@ const mockSetCurrentContext = jest.fn();
 jest.mock('@kubernetes/client-node', () => ({
   CustomObjectsApi: jest.fn().mockImplementation(() => ({
     listClusterCustomObject: mockListClusterCustomObject,
+    createClusterCustomObject: mockCreateClusterCustomObject,
+    deleteClusterCustomObject: mockDeleteClusterCustomObject,
   })),
   CoreV1Api: jest.fn().mockImplementation(() => ({
     readNamespacedSecret: mockReadNamespacedSecret,
@@ -56,6 +60,8 @@ describe('KcpKubernetesService', () => {
 
     mockMakeApiClient.mockReturnValue({
       listClusterCustomObject: mockListClusterCustomObject,
+      createClusterCustomObject: mockCreateClusterCustomObject,
+      deleteClusterCustomObject: mockDeleteClusterCustomObject,
       readNamespacedSecret: mockReadNamespacedSecret,
     });
   });
@@ -471,8 +477,7 @@ describe('KcpKubernetesService', () => {
       expect(mockListClusterCustomObject).toHaveBeenCalled();
     });
 
-    it('sets Authorization header with Bearer token', async () => {
-      const svc = new KcpKubernetesService();
+    it('sets Authorization header with Bearer token', async () => {      const svc = new KcpKubernetesService();
       const gvr: K8sResourceDescriptor = {
         group: 'apps',
         version: 'v1',
@@ -682,6 +687,102 @@ describe('KcpKubernetesService', () => {
       await expect(svc.getClientSecret(orgName)).rejects.toThrow(
         'Network error',
       );
+    });
+  });
+
+  describe('listClusterCustomObjects', () => {
+    it('calls API with workspace path and returns items', async () => {
+      const svc = new KcpKubernetesService();
+      const gvr = { group: 'apis.kcp.io', version: 'v1alpha1', plural: 'apiexports' };
+      mockListClusterCustomObject.mockResolvedValue({ items: [{ metadata: { name: 'test' } }] });
+
+      const result = await svc.listClusterCustomObjects(gvr, 'root:providers');
+
+      expect(result).toEqual({ items: [{ metadata: { name: 'test' } }] });
+    });
+
+    it('builds URL without name suffix in middleware', async () => {
+      const svc = new KcpKubernetesService();
+      const gvr = { group: 'apis.kcp.io', version: 'v1alpha1', plural: 'apiexports' };
+
+      let capturedUrl: string | undefined;
+      mockListClusterCustomObject.mockImplementation(async (_gvr, options) => {
+        const middleware = options.middleware[0];
+        const mockCtx = { setUrl: jest.fn((url) => { capturedUrl = url; }) };
+        await middleware.options.pre(mockCtx);
+        await middleware.options.post(mockCtx);
+        return { items: [] };
+      });
+
+      await svc.listClusterCustomObjects(gvr, 'root:providers');
+
+      expect(capturedUrl).toBe('https://kcp.example.com/clusters/root:providers/apis/apis.kcp.io/v1alpha1/apiexports');
+    });
+  });
+
+  describe('createClusterCustomObject', () => {
+    it('calls API with body merged into request params', async () => {
+      const svc = new KcpKubernetesService();
+      const gvr = { group: 'core.platform-mesh.io', version: 'v1alpha1', plural: 'apiexportpolicies' };
+      const body = { metadata: { name: 'my-policy' }, spec: {} };
+      mockCreateClusterCustomObject.mockResolvedValue({ metadata: { name: 'my-policy' } });
+
+      await svc.createClusterCustomObject(gvr, 'root:orgs:my-org', body);
+
+      expect(mockCreateClusterCustomObject).toHaveBeenCalledWith(
+        expect.objectContaining({ ...gvr, body }),
+        expect.objectContaining({ middleware: expect.any(Array) }),
+      );
+    });
+
+    it('builds correct create URL in middleware', async () => {
+      const svc = new KcpKubernetesService();
+      const gvr = { group: 'core.platform-mesh.io', version: 'v1alpha1', plural: 'apiexportpolicies' };
+
+      let capturedUrl: string | undefined;
+      mockCreateClusterCustomObject.mockImplementation(async (_params, options) => {
+        const middleware = options.middleware[0];
+        const mockCtx = { setUrl: jest.fn((url) => { capturedUrl = url; }) };
+        await middleware.options.pre(mockCtx);
+        await middleware.options.post(mockCtx);
+        return {};
+      });
+
+      await svc.createClusterCustomObject(gvr, 'root:orgs:acme', {});
+
+      expect(capturedUrl).toBe('https://kcp.example.com/clusters/root:orgs:acme/apis/core.platform-mesh.io/v1alpha1/apiexportpolicies');
+    });
+  });
+
+  describe('deleteClusterCustomObject', () => {
+    it('calls API with name and workspace path', async () => {
+      const svc = new KcpKubernetesService();
+      const gvr = { group: 'core.platform-mesh.io', version: 'v1alpha1', plural: 'apiexportpolicies' };
+      mockDeleteClusterCustomObject.mockResolvedValue(undefined);
+
+      await svc.deleteClusterCustomObject(gvr, 'root:orgs:my-org', 'my-policy');
+
+      expect(mockDeleteClusterCustomObject).toHaveBeenCalledWith(
+        expect.objectContaining({ ...gvr, name: 'my-policy' }),
+        expect.objectContaining({ middleware: expect.any(Array) }),
+      );
+    });
+
+    it('builds correct delete URL with name in middleware', async () => {
+      const svc = new KcpKubernetesService();
+      const gvr = { group: 'core.platform-mesh.io', version: 'v1alpha1', plural: 'apiexportpolicies' };
+
+      let capturedUrl: string | undefined;
+      mockDeleteClusterCustomObject.mockImplementation(async (_params, options) => {
+        const middleware = options.middleware[0];
+        const mockCtx = { setUrl: jest.fn((url) => { capturedUrl = url; }) };
+        await middleware.options.pre(mockCtx);
+        await middleware.options.post(mockCtx);
+      });
+
+      await svc.deleteClusterCustomObject(gvr, 'root:orgs:acme', 'alpha');
+
+      expect(capturedUrl).toBe('https://kcp.example.com/clusters/root:orgs:acme/apis/core.platform-mesh.io/v1alpha1/apiexportpolicies/alpha');
     });
   });
 });
