@@ -8,6 +8,7 @@ import {
 } from '@openmfp/portal-server-lib';
 import { Request, Response } from 'express';
 import { of, throwError } from 'rxjs';
+import type { Mock } from 'vitest';
 
 describe('PMLogoutService', () => {
   let service: PMLogoutService;
@@ -21,15 +22,15 @@ describe('PMLogoutService', () => {
         PMLogoutService,
         {
           provide: HttpService,
-          useValue: { post: jest.fn() },
+          useValue: { post: vi.fn() },
         },
         {
           provide: AUTH_CONFIG_INJECTION_TOKEN,
-          useValue: { getAuthConfig: jest.fn() },
+          useValue: { getAuthConfig: vi.fn() },
         },
         {
           provide: CookiesService,
-          useValue: { getAuthCookie: jest.fn() },
+          useValue: { getAuthCookie: vi.fn() },
         },
         {
           provide: 'AUTH_CONFIG_INJECTION_TOKEN',
@@ -48,15 +49,15 @@ describe('PMLogoutService', () => {
     const mockRequest = {} as Request;
     const mockResponse = {} as Response;
 
-    (authConfigService.getAuthConfig as jest.Mock).mockResolvedValue({
+    (authConfigService.getAuthConfig as Mock).mockResolvedValue({
       clientId: 'client-id',
       clientSecret: 'secret',
       endSessionUrl: 'https://keycloak/logout',
     });
-    (cookiesService.getAuthCookie as jest.Mock).mockReturnValue(
+    (cookiesService.getAuthCookie as Mock).mockReturnValue(
       'refresh-token',
     );
-    (httpService.post as jest.Mock).mockReturnValue(of({ data: {} }));
+    (httpService.post as Mock).mockReturnValue(of({ data: {} }));
 
     await service.handleLogout(mockRequest, mockResponse);
 
@@ -74,19 +75,19 @@ describe('PMLogoutService', () => {
     const mockRequest = {} as Request;
     const mockResponse = {} as Response;
 
-    (authConfigService.getAuthConfig as jest.Mock).mockResolvedValue({
+    (authConfigService.getAuthConfig as Mock).mockResolvedValue({
       clientId: 'client-id',
       clientSecret: 'secret',
       endSessionUrl: 'https://keycloak/logout',
     });
-    (cookiesService.getAuthCookie as jest.Mock).mockReturnValue(
+    (cookiesService.getAuthCookie as Mock).mockReturnValue(
       'refresh-token',
     );
-    (httpService.post as jest.Mock).mockReturnValue(of({ data: {} }));
+    (httpService.post as Mock).mockReturnValue(of({ data: {} }));
 
     await service.handleLogout(mockRequest, mockResponse);
 
-    const body = (httpService.post as jest.Mock).mock
+    const body = (httpService.post as Mock).mock
       .calls[0][1] as URLSearchParams;
     expect(body.get('refresh_token')).toBe('refresh-token');
     expect(body.get('client_secret')).toBeNull();
@@ -102,15 +103,15 @@ describe('PMLogoutService', () => {
     } as unknown as Request;
     const mockResponse = {} as Response;
 
-    (authConfigService.getAuthConfig as jest.Mock).mockResolvedValue({
+    (authConfigService.getAuthConfig as Mock).mockResolvedValue({
       clientId: 'client-id',
       clientSecret: 'secret',
       endSessionUrl: 'https://keycloak/logout',
     });
-    (cookiesService.getAuthCookie as jest.Mock).mockReturnValue(
+    (cookiesService.getAuthCookie as Mock).mockReturnValue(
       'refresh-token',
     );
-    (httpService.post as jest.Mock).mockReturnValue(
+    (httpService.post as Mock).mockReturnValue(
       throwError(() => new Error('Network error')),
     );
 

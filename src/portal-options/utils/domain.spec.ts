@@ -5,7 +5,7 @@ describe('getOrganization', () => {
   const OLD_ENV = process.env;
 
   beforeEach(() => {
-    jest.resetModules();
+    vi.resetModules();
     process.env = { ...OLD_ENV };
     process.env.OIDC_CLIENT_ID_DEFAULT = 'default-client';
     process.env.BASE_DOMAINS_DEFAULT = 'example.com';
@@ -53,7 +53,7 @@ describe('getDiscoveryEndpoint', () => {
     ({ hostname }) as unknown as Request;
 
   beforeEach(() => {
-    jest.resetModules();
+    vi.resetModules();
     process.env = { ...OLD_ENV };
     process.env.OIDC_CLIENT_ID_DEFAULT = 'default-client';
     process.env.BASE_DOMAINS_DEFAULT = 'example.com';

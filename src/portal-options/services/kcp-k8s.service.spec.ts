@@ -2,37 +2,43 @@ import { K8sRequestContext, K8sResourceDescriptor } from '../models/k8s.js';
 import { KcpKubernetesService } from './kcp-k8s.service.js';
 import type { Request } from 'express';
 
-const mockListClusterCustomObject = jest.fn();
-const mockReadNamespacedSecret = jest.fn();
-const mockMakeApiClient = jest.fn();
-const mockGetCurrentCluster = jest.fn();
-const mockLoadFromFile = jest.fn();
-const mockAddUser = jest.fn();
-const mockAddContext = jest.fn();
-const mockSetCurrentContext = jest.fn();
+const mockListClusterCustomObject = vi.fn();
+const mockReadNamespacedSecret = vi.fn();
+const mockMakeApiClient = vi.fn();
+const mockGetCurrentCluster = vi.fn();
+const mockLoadFromFile = vi.fn();
+const mockAddUser = vi.fn();
+const mockAddContext = vi.fn();
+const mockSetCurrentContext = vi.fn();
 
-jest.mock('@kubernetes/client-node', () => ({
-  CustomObjectsApi: jest.fn().mockImplementation(() => ({
-    listClusterCustomObject: mockListClusterCustomObject,
-  })),
-  CoreV1Api: jest.fn().mockImplementation(() => ({
-    readNamespacedSecret: mockReadNamespacedSecret,
-  })),
-  KubeConfig: jest.fn().mockImplementation(() => ({
-    loadFromFile: mockLoadFromFile,
-    addUser: mockAddUser,
-    addContext: mockAddContext,
-    setCurrentContext: mockSetCurrentContext,
-    getCurrentCluster: mockGetCurrentCluster,
-    makeApiClient: mockMakeApiClient,
-  })),
+vi.mock('@kubernetes/client-node', () => ({
+  CustomObjectsApi: vi.fn().mockImplementation(function () {
+    return {
+      listClusterCustomObject: mockListClusterCustomObject,
+    };
+  }),
+  CoreV1Api: vi.fn().mockImplementation(function () {
+    return {
+      readNamespacedSecret: mockReadNamespacedSecret,
+    };
+  }),
+  KubeConfig: vi.fn().mockImplementation(function () {
+    return {
+      loadFromFile: mockLoadFromFile,
+      addUser: mockAddUser,
+      addContext: mockAddContext,
+      setCurrentContext: mockSetCurrentContext,
+      getCurrentCluster: mockGetCurrentCluster,
+      makeApiClient: mockMakeApiClient,
+    };
+  }),
 }));
 
-jest.mock('../utils/domain.js', () => ({
-  getOrganization: jest.fn(() => 'org-1'),
+vi.mock('../utils/domain.js', () => ({
+  getOrganization: vi.fn(() => 'org-1'),
 }));
 
-jest.mock('@kubernetes/client-node/dist/gen/middleware.js', () => ({
+vi.mock('@kubernetes/client-node/dist/gen/middleware.js', () => ({
   PromiseMiddlewareWrapper: class {
     constructor(public options: any) {}
   },
@@ -42,7 +48,7 @@ describe('KcpKubernetesService', () => {
   const OLD_ENV = process.env;
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     process.env = {
       ...OLD_ENV,
       KUBECONFIG_KCP: '/tmp/kcp.kubeconfig',
@@ -367,7 +373,7 @@ describe('KcpKubernetesService', () => {
       mockListClusterCustomObject.mockImplementation(async (_gvr, options) => {
         const middleware = options.middleware[0];
         const mockContext = {
-          setUrl: jest.fn(),
+          setUrl: vi.fn(),
         };
         await middleware.options.pre(mockContext);
         postResult = await middleware.options.post(mockContext);
@@ -397,7 +403,7 @@ describe('KcpKubernetesService', () => {
         async (gvrParam, options) => {
           const middleware = options.middleware[0];
           const mockContext = {
-            setUrl: jest.fn(),
+            setUrl: vi.fn(),
           };
           capturedContext = mockContext;
           await middleware.options.pre(mockContext);
@@ -429,7 +435,7 @@ describe('KcpKubernetesService', () => {
         async (gvrParam, options) => {
           const middleware = options.middleware[0];
           const mockContext = {
-            setUrl: jest.fn(),
+            setUrl: vi.fn(),
           };
           capturedContext = mockContext;
           await middleware.options.pre(mockContext);
@@ -490,8 +496,8 @@ describe('KcpKubernetesService', () => {
         async (gvrParam, options) => {
           const middleware = options.middleware[0];
           const mockContext = {
-            setUrl: jest.fn(),
-            setHeaderParam: jest.fn(),
+            setUrl: vi.fn(),
+            setHeaderParam: vi.fn(),
           };
           capturedContext = mockContext;
           await middleware.options.pre(mockContext);
@@ -529,8 +535,8 @@ describe('KcpKubernetesService', () => {
         async (gvrParam, options) => {
           const middleware = options.middleware[0];
           const mockContext = {
-            setUrl: jest.fn(),
-            setHeaderParam: jest.fn(),
+            setUrl: vi.fn(),
+            setHeaderParam: vi.fn(),
           };
           capturedContext = mockContext;
           await middleware.options.pre(mockContext);
@@ -604,7 +610,7 @@ describe('KcpKubernetesService', () => {
       mockReadNamespacedSecret.mockImplementation(async (params, options) => {
         const middleware = options.middleware[0];
         const mockContext = {
-          setUrl: jest.fn(),
+          setUrl: vi.fn(),
         };
         capturedContext = mockContext;
         await middleware.options.pre(mockContext);
@@ -630,7 +636,7 @@ describe('KcpKubernetesService', () => {
       mockReadNamespacedSecret.mockImplementation(async (_params, options) => {
         const middleware = options.middleware[0];
         const mockContext = {
-          setUrl: jest.fn(),
+          setUrl: vi.fn(),
         };
         await middleware.options.pre(mockContext);
         postResult = await middleware.options.post(mockContext);

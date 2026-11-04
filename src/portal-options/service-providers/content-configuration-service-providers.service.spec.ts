@@ -3,12 +3,15 @@ import { PermissionsProxyService } from '../services/permissions/permissions-pro
 import { ContentConfigurationServiceProvidersService } from './content-configuration-service-providers.service.js';
 import { welcomeNodeConfig } from './models/welcome-node-config.js';
 import { GraphQLClient } from 'graphql-request';
+import type { Mock, Mocked } from 'vitest';
 
-jest.mock('graphql-request', () => {
+vi.mock('graphql-request', () => {
   return {
-    GraphQLClient: jest.fn().mockImplementation(() => ({
-      request: jest.fn(),
-    })),
+    GraphQLClient: vi.fn().mockImplementation(function () {
+      return {
+        request: vi.fn(),
+      };
+    }),
     gql(query: TemplateStringsArray) {
       return query[0];
     },
@@ -17,19 +20,21 @@ jest.mock('graphql-request', () => {
 
 describe('ContentConfigurationServiceProvidersService', () => {
   let service: ContentConfigurationServiceProvidersService;
-  let mockClient: jest.Mocked<GraphQLClient>;
+  let mockClient: Mocked<GraphQLClient>;
   let context: RequestContext;
-  let permissionsProxyService: jest.Mocked<PermissionsProxyService>;
+  let permissionsProxyService: Mocked<PermissionsProxyService>;
 
   beforeEach(() => {
     permissionsProxyService = {
-      resolvePermissions: jest.fn().mockResolvedValue([]),
-    } as unknown as jest.Mocked<PermissionsProxyService>;
+      resolvePermissions: vi.fn().mockResolvedValue([]),
+    } as unknown as Mocked<PermissionsProxyService>;
     service = new ContentConfigurationServiceProvidersService(
       permissionsProxyService,
     );
     mockClient = new GraphQLClient('') as any;
-    (GraphQLClient as jest.Mock).mockReturnValue(mockClient);
+    (GraphQLClient as Mock).mockImplementation(function () {
+      return mockClient;
+    });
     context = {
       isSubDomain: true,
       organization: 'org1',
@@ -46,7 +51,7 @@ describe('ContentConfigurationServiceProvidersService', () => {
   });
 
   it.each([{ entities: [] }, { entities: ['core_platform-mesh_io_account'] }])(
-    'normalizes root and entity configuration through the GraphQL provider for %p',
+    'normalizes root and entity configuration through the GraphQL provider for %o',
     async ({ entities }) => {
       const config = {
         name: 'accounts',

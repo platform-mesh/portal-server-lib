@@ -5,37 +5,38 @@ import { KubernetesServiceProvidersService } from './kubernetes-service-provider
 import { welcomeNodeConfig } from './models/welcome-node-config.js';
 import { Test, TestingModule } from '@nestjs/testing';
 import { ContentConfiguration } from '@openmfp/portal-server-lib';
-import { mock } from 'jest-mock-extended';
+import { mock } from 'vitest-mock-extended';
+import type { Mocked } from 'vitest';
 
-const listClusterCustomObject = jest.fn();
+const listClusterCustomObject = vi.fn();
 
-jest.mock('@kubernetes/client-node', () => {
+vi.mock('@kubernetes/client-node', () => {
   class KubeConfig {
-    loadFromDefault = jest.fn();
-    loadFromFile = jest.fn();
-    getCurrentCluster = jest.fn().mockReturnValue({
+    loadFromDefault = vi.fn();
+    loadFromFile = vi.fn();
+    getCurrentCluster = vi.fn().mockReturnValue({
       server: 'https://k8s.example.com/base',
       name: 'test-cluster',
     });
-    makeApiClient = jest.fn().mockImplementation(() => ({
+    makeApiClient = vi.fn().mockImplementation(() => ({
       listClusterCustomObject,
     }));
-    addUser = jest.fn();
-    addContext = jest.fn();
-    setCurrentContext = jest.fn();
+    addUser = vi.fn();
+    addContext = vi.fn();
+    setCurrentContext = vi.fn();
   }
   class CustomObjectsApi {}
   return { KubeConfig, CustomObjectsApi };
 });
 
-jest.mock('@kubernetes/client-node/dist/gen/middleware.js', () => ({
+vi.mock('@kubernetes/client-node/dist/gen/middleware.js', () => ({
   PromiseMiddlewareWrapper: class {},
 }));
 
 describe('KubernetesServiceProvidersService', () => {
   let service: KubernetesServiceProvidersService;
-  let kcpKubernetesServiceMock: jest.Mocked<KcpKubernetesService>;
-  let permissionsProxyServiceMock: jest.Mocked<PermissionsProxyService>;
+  let kcpKubernetesServiceMock: Mocked<KcpKubernetesService>;
+  let permissionsProxyServiceMock: Mocked<PermissionsProxyService>;
 
   const mockToken = 'test-token-123';
   const mockEntities = ['test-entity'];
@@ -47,8 +48,8 @@ describe('KubernetesServiceProvidersService', () => {
   beforeEach(async () => {
     kcpKubernetesServiceMock = mock<KcpKubernetesService>();
     permissionsProxyServiceMock = {
-      resolvePermissions: jest.fn().mockResolvedValue([]),
-    } as unknown as jest.Mocked<PermissionsProxyService>;
+      resolvePermissions: vi.fn().mockResolvedValue([]),
+    } as unknown as Mocked<PermissionsProxyService>;
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -71,7 +72,7 @@ describe('KubernetesServiceProvidersService', () => {
 
   describe('getServiceProviders', () => {
     it.each([{ entities: [] }, { entities: ['core_platform-mesh_io_account'] }])(
-      'normalizes built-in and provider bundle nodes for entity selection %p',
+      'normalizes built-in and provider bundle nodes for entity selection %o',
       async ({ entities }) => {
         const portalOrigin = 'https://portal.example.test';
         const config = {
@@ -391,9 +392,9 @@ describe('KubernetesServiceProvidersService', () => {
         .mockRejectedValueOnce(error)
         .mockResolvedValueOnce(mockResponse as any);
 
-      jest.spyOn(console, 'error').mockImplementation();
-      jest.spyOn(console, 'log').mockImplementation();
-      jest.spyOn(global, 'setTimeout');
+      vi.spyOn(console, 'error').mockImplementation(() => {});
+      vi.spyOn(console, 'log').mockImplementation(() => {});
+      vi.spyOn(global, 'setTimeout');
 
       await service.getServiceProviders(mockToken, mockEntities, mockContext);
 
@@ -402,7 +403,7 @@ describe('KubernetesServiceProvidersService', () => {
       ).toHaveBeenCalledTimes(2);
       expect(setTimeout).toHaveBeenCalledWith(expect.any(Function), 1000);
 
-      jest.restoreAllMocks();
+      vi.restoreAllMocks();
     });
 
     it('should retry once on statusCode 429 error', async () => {
@@ -413,8 +414,8 @@ describe('KubernetesServiceProvidersService', () => {
         .mockRejectedValueOnce(error)
         .mockResolvedValueOnce(mockResponse as any);
 
-      jest.spyOn(console, 'error').mockImplementation();
-      jest.spyOn(console, 'log').mockImplementation();
+      vi.spyOn(console, 'error').mockImplementation(() => {});
+      vi.spyOn(console, 'log').mockImplementation(() => {});
 
       await service.getServiceProviders(mockToken, mockEntities, mockContext);
 
@@ -422,7 +423,7 @@ describe('KubernetesServiceProvidersService', () => {
         kcpKubernetesServiceMock.listClusterCustomObjectInKcpVirtualWorkspace,
       ).toHaveBeenCalledTimes(2);
 
-      jest.restoreAllMocks();
+      vi.restoreAllMocks();
     });
 
     it('should log error on kubernetes service failure', async () => {
@@ -431,7 +432,9 @@ describe('KubernetesServiceProvidersService', () => {
         error,
       );
 
-      const consoleSpy = jest.spyOn(console, 'error').mockImplementation();
+      const consoleSpy = vi
+        .spyOn(console, 'error')
+        .mockImplementation(() => {});
 
       await service.getServiceProviders(mockToken, mockEntities, mockContext);
 
@@ -446,7 +449,7 @@ describe('KubernetesServiceProvidersService', () => {
         error,
       );
 
-      jest.spyOn(console, 'error').mockImplementation();
+      vi.spyOn(console, 'error').mockImplementation(() => {});
 
       await service.getServiceProviders(mockToken, mockEntities, mockContext);
 
@@ -454,7 +457,7 @@ describe('KubernetesServiceProvidersService', () => {
         kcpKubernetesServiceMock.listClusterCustomObjectInKcpVirtualWorkspace,
       ).toHaveBeenCalledTimes(1);
 
-      jest.restoreAllMocks();
+      vi.restoreAllMocks();
     });
 
     it('should return result after successful retry', async () => {
@@ -477,8 +480,8 @@ describe('KubernetesServiceProvidersService', () => {
         .mockRejectedValueOnce(error)
         .mockResolvedValueOnce(mockResponse as any);
 
-      jest.spyOn(console, 'error').mockImplementation();
-      jest.spyOn(console, 'log').mockImplementation();
+      vi.spyOn(console, 'error').mockImplementation(() => {});
+      vi.spyOn(console, 'log').mockImplementation(() => {});
 
       const result = await service.getServiceProviders(
         mockToken,
@@ -493,7 +496,7 @@ describe('KubernetesServiceProvidersService', () => {
         'https://test.com',
       );
 
-      jest.restoreAllMocks();
+      vi.restoreAllMocks();
     });
   });
 

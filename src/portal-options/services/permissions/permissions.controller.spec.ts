@@ -1,10 +1,11 @@
 import { UnauthorizedException } from '@nestjs/common';
 import { HeaderParserService } from '@openmfp/portal-server-lib';
 import { Test, TestingModule } from '@nestjs/testing';
-import { mock } from 'jest-mock-extended';
+import { mock } from 'vitest-mock-extended';
 import { PermissionsController } from './permissions.controller.js';
 import { PermissionsProxyService } from './permissions-proxy.service.js';
 import { AuthorizationRequest, Permission } from './models/permissions.model.js';
+import type { Mocked } from 'vitest';
 
 function makeBody(
   overrides: Partial<AuthorizationRequest> = {},
@@ -30,8 +31,8 @@ const request = {} as Request;
 
 describe('PermissionsController', () => {
   let controller: PermissionsController;
-  let proxyService: jest.Mocked<PermissionsProxyService>;
-  let headerParser: jest.Mocked<HeaderParserService>;
+  let proxyService: Mocked<PermissionsProxyService>;
+  let headerParser: Mocked<HeaderParserService>;
 
   beforeEach(async () => {
     proxyService = mock<PermissionsProxyService>();

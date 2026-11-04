@@ -36,7 +36,7 @@ npm run test:cov           # alias for npm run test
 npm run test:watch         # run tests in watch mode (no coverage)
 ```
 
-Tests use **Jest** with `ts-jest` (ESM preset). Coverage is collected and enforced at:
+Tests use **Vitest** (`vitest.config.ts`). Coverage is collected with the V8 provider and enforced at:
 
 - **Branches: 75%**
 - **Functions: 89%**
@@ -87,7 +87,7 @@ portal-server-lib/
 │           ├── account-hierarchy-resolver.ts   # account path / entity type manipulation
 │           ├── domain.ts                        # getOrganization, getDiscoveryEndpoint
 │           └── replace-string-deep.ts           # deep string replacement utility
-├── jest.config.ts
+├── vitest.config.ts
 ├── nest-cli.json
 ├── tsconfig.json
 └── package.json
