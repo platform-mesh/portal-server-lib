@@ -6,6 +6,7 @@ import {
   SubjectAccessReview,
 } from '../models/permissions.model.js';
 import { AuthzWebhookService } from './authz-webhook.service.js';
+import type { Mock } from 'vitest';
 
 // Build a valid JWT token with the given payload
 function makeJwt(payload: Record<string, unknown>): string {
@@ -21,7 +22,7 @@ const WEBHOOK_URL = 'https://authz.example.com';
 const BATCH_URL = `${WEBHOOK_URL}/batch-authz`;
 
 // The posted body is the SubjectAccessReview[] array itself.
-function postedItems(post: jest.Mock): SubjectAccessReview[] {
+function postedItems(post: Mock): SubjectAccessReview[] {
   return post.mock.calls[0][1] as SubjectAccessReview[];
 }
 
@@ -73,14 +74,14 @@ function makeInstanceRequest(
 
 describe('AuthzWebhookService', () => {
   let service: AuthzWebhookService;
-  let httpService: { post: jest.Mock };
+  let httpService: { post: Mock };
   const OLD_ENV = process.env;
 
   beforeEach(async () => {
     process.env = { ...OLD_ENV };
     process.env['OPENMFP_PORTAL_CONTEXT_AUTHZ_WEBHOOK_URL'] = WEBHOOK_URL;
 
-    httpService = { post: jest.fn() };
+    httpService = { post: vi.fn() };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [

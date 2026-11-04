@@ -2,39 +2,40 @@ import { PMRequestContextProvider } from './pm-request-context-provider.js';
 import { getOrganization } from './utils/domain.js';
 import { PortalContextProviderImpl } from '@openmfp/portal-server-lib';
 import type { Request } from 'express';
-import { mock } from 'jest-mock-extended';
+import { mock } from 'vitest-mock-extended';
+import type { Mock } from 'vitest';
 
-jest.mock('@kubernetes/client-node', () => {
+vi.mock('@kubernetes/client-node', () => {
   class KubeConfig {
-    loadFromDefault = jest.fn();
-    loadFromFile = jest.fn();
-    getCurrentCluster = jest.fn().mockReturnValue({
+    loadFromDefault = vi.fn();
+    loadFromFile = vi.fn();
+    getCurrentCluster = vi.fn().mockReturnValue({
       server: 'https://k8s.example.com/base',
       name: 'test-cluster',
     });
-    makeApiClient = jest.fn();
-    addUser = jest.fn();
-    addContext = jest.fn();
-    setCurrentContext = jest.fn();
+    makeApiClient = vi.fn();
+    addUser = vi.fn();
+    addContext = vi.fn();
+    setCurrentContext = vi.fn();
   }
   class CustomObjectsApi {}
   return { KubeConfig, CustomObjectsApi };
 });
 
-jest.mock('./utils/domain.js', () => ({
-  getOrganization: jest.fn(),
+vi.mock('./utils/domain.js', () => ({
+  getOrganization: vi.fn(),
 }));
 
 describe('PMRequestContextProvider', () => {
   let provider: PMRequestContextProvider;
   const portalContextService = mock<PortalContextProviderImpl>();
-  const mockedGetOrganization = jest.mocked(getOrganization);
+  const mockedGetOrganization = vi.mocked(getOrganization);
 
   beforeEach(() => {
-    jest.resetAllMocks();
+    vi.resetAllMocks();
     mockedGetOrganization.mockReturnValue('org1');
     (
-      portalContextService.getContextValues as unknown as jest.Mock
+      portalContextService.getContextValues as unknown as Mock
     ).mockResolvedValue({
       crdGatewayApiUrl: 'http://gateway/graphql',
       other: 'x',

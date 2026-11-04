@@ -151,7 +151,7 @@ describe('normalizePortalWebComponentModules', () => {
   });
 
   it.each(['module', 'classic', '', null])(
-    'preserves explicitly configured type %p',
+    'preserves explicitly configured type %o',
     (type) => {
       const config = configuration([
         node({ webcomponent: { selfRegistered: true, type } }),
@@ -165,7 +165,7 @@ describe('normalizePortalWebComponentModules', () => {
   );
 
   it.each([undefined, false, true, { selfRegistered: false }])(
-    'preserves non-self-registered setting %p',
+    'preserves non-self-registered setting %o',
     (webcomponent) => {
       const config = configuration([node({ webcomponent })]);
       normalizePortalWebComponentModules(config);
@@ -259,7 +259,7 @@ describe('normalizePortalWebComponentModules', () => {
     {},
     { luigiConfigFragment: {} },
     { luigiConfigFragment: { data: { nodes: null } } },
-  ])('ignores absent node structures %p', (value) => {
+  ])('ignores absent node structures %o', (value) => {
     expect(() =>
       normalizePortalWebComponentModules(value as ContentConfiguration),
     ).not.toThrow();

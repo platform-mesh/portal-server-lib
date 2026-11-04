@@ -5,37 +5,38 @@ import * as domainUtils from './utils/domain.js';
 import { HttpException, HttpStatus } from '@nestjs/common';
 import { DiscoveryService } from '@openmfp/portal-server-lib';
 import type { Request } from 'express';
-import { mock } from 'jest-mock-extended';
+import { mock } from 'vitest-mock-extended';
+import type { Mocked } from 'vitest';
 
-jest.mock('@kubernetes/client-node', () => {
-  const mockReadNamespacedSecret = jest.fn();
+vi.mock('@kubernetes/client-node', () => {
+  const mockReadNamespacedSecret = vi.fn();
   class KubeConfig {
-    loadFromDefault = jest.fn();
-    loadFromFile = jest.fn();
-    getCurrentCluster = jest.fn().mockReturnValue({
+    loadFromDefault = vi.fn();
+    loadFromFile = vi.fn();
+    getCurrentCluster = vi.fn().mockReturnValue({
       server: 'https://k8s.example.com',
       name: 'test-cluster',
     });
-    makeApiClient = jest.fn().mockReturnValue({
+    makeApiClient = vi.fn().mockReturnValue({
       readNamespacedSecret: mockReadNamespacedSecret,
     });
-    addUser = jest.fn();
-    addContext = jest.fn();
-    setCurrentContext = jest.fn();
+    addUser = vi.fn();
+    addContext = vi.fn();
+    setCurrentContext = vi.fn();
   }
   class CoreV1Api {}
   class CustomObjectsApi {}
   return { KubeConfig, CoreV1Api, CustomObjectsApi, mockReadNamespacedSecret };
 });
 
-jest.mock('@kubernetes/client-node/dist/gen/middleware.js', () => ({
+vi.mock('@kubernetes/client-node/dist/gen/middleware.js', () => ({
   PromiseMiddlewareWrapper: class {},
 }));
 
 describe('PMAuthConfigProvider', () => {
   let provider: PMAuthConfigProvider;
-  let discoveryService: jest.Mocked<DiscoveryService>;
-  let kcpKubernetesService: jest.Mocked<KcpKubernetesService>;
+  let discoveryService: Mocked<DiscoveryService>;
+  let kcpKubernetesService: Mocked<KcpKubernetesService>;
   let mockRequest: Request;
 
   const mockOidcDiscovery = {
@@ -58,18 +59,18 @@ describe('PMAuthConfigProvider', () => {
       TOKEN_URL_DEFAULT: 'https://default-auth.com/token',
     };
 
-    jest
+    vi
       .spyOn(domainUtils, 'getDiscoveryEndpoint')
       .mockReturnValue(
         'https://oidc.example.com/.well-known/openid-configuration',
       );
-    jest.spyOn(domainUtils, 'getOrganization').mockReturnValue('org1');
+    vi.spyOn(domainUtils, 'getOrganization').mockReturnValue('org1');
 
     discoveryService.getOIDC.mockResolvedValue(mockOidcDiscovery);
   });
 
   afterEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   describe('getAuthConfig', () => {
@@ -118,7 +119,7 @@ describe('PMAuthConfigProvider', () => {
     });
 
     it('should handle welcome organization', async () => {
-      jest.spyOn(domainUtils, 'getOrganization').mockReturnValue('welcome');
+      vi.spyOn(domainUtils, 'getOrganization').mockReturnValue('welcome');
 
       const mockIdpConfig: IdentityProviderConfiguration = {
         status: {
@@ -300,7 +301,7 @@ describe('PMAuthConfigProvider', () => {
 
       try {
         await provider.getAuthConfig(mockRequest);
-        fail('Should have thrown HttpException');
+        expect.fail('Should have thrown HttpException');
       } catch (error) {
         expect(error).toBeInstanceOf(HttpException);
         const response = (error as HttpException).getResponse() as any;
@@ -481,7 +482,7 @@ describe('PMAuthConfigProvider', () => {
 
       try {
         await provider.getAuthConfig(mockRequest);
-        fail('Should have thrown');
+        expect.fail('Should have thrown');
       } catch (error) {
         const response = (error as HttpException).getResponse() as any;
         expect(response.error).toContain('has client secret: false');

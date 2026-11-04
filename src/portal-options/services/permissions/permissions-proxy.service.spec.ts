@@ -1,5 +1,5 @@
 import { ContentConfiguration } from '@openmfp/portal-server-lib';
-import { mock } from 'jest-mock-extended';
+import { mock } from 'vitest-mock-extended';
 import { AuthzWebhookService } from './adapters/authz-webhook.service.js';
 import {
   AuthorizationRequest,
@@ -7,6 +7,7 @@ import {
   PermissionsDefinition,
 } from './models/permissions.model.js';
 import { PermissionsProxyService } from './permissions-proxy.service.js';
+import type { Mocked } from 'vitest';
 
 function makeCC(
   nodes: ContentConfiguration['luigiConfigFragment']['data']['nodes'] = [],
@@ -66,7 +67,7 @@ function makeAuthzRequest(
 }
 
 describe('PermissionsProxyService', () => {
-  let authzWebhook: jest.Mocked<AuthzWebhookService>;
+  let authzWebhook: Mocked<AuthzWebhookService>;
   let svc: PermissionsProxyService;
 
   beforeEach(() => {

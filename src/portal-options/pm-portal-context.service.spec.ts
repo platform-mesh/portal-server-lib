@@ -3,38 +3,39 @@ import { KcpKubernetesService } from './services/kcp-k8s.service.js';
 import { getOrganization } from './utils/domain.js';
 import { Test, TestingModule } from '@nestjs/testing';
 import { Request } from 'express';
-import { mock } from 'jest-mock-extended';
+import { mock } from 'vitest-mock-extended';
 import process from 'node:process';
+import type { Mocked } from 'vitest';
 
-jest.mock('@kubernetes/client-node', () => {
+vi.mock('@kubernetes/client-node', () => {
   class KubeConfig {
-    loadFromDefault = jest.fn();
-    loadFromFile = jest.fn();
-    getCurrentCluster = jest.fn().mockReturnValue({
+    loadFromDefault = vi.fn();
+    loadFromFile = vi.fn();
+    getCurrentCluster = vi.fn().mockReturnValue({
       server: 'https://k8s.example.com/base',
       name: 'test-cluster',
     });
-    makeApiClient = jest.fn();
-    addUser = jest.fn();
-    addContext = jest.fn();
-    setCurrentContext = jest.fn();
+    makeApiClient = vi.fn();
+    addUser = vi.fn();
+    addContext = vi.fn();
+    setCurrentContext = vi.fn();
   }
   class CustomObjectsApi {}
   return { KubeConfig, CustomObjectsApi };
 });
 
-jest.mock('./utils/domain.js', () => ({
-  getOrganization: jest.fn(),
+vi.mock('./utils/domain.js', () => ({
+  getOrganization: vi.fn(),
 }));
 
-jest.mock('@kubernetes/client-node/dist/gen/middleware.js', () => ({
+vi.mock('@kubernetes/client-node/dist/gen/middleware.js', () => ({
   PromiseMiddlewareWrapper: class {},
 }));
 
 describe('PMPortalContextService', () => {
   let service: PMPortalContextService;
-  let kcpKubernetesServiceMock: jest.Mocked<KcpKubernetesService>;
-  const mockedGetDomainAndOrganization = jest.mocked(getOrganization);
+  let kcpKubernetesServiceMock: Mocked<KcpKubernetesService>;
+  const mockedGetDomainAndOrganization = vi.mocked(getOrganization);
   let mockRequest: any;
 
   beforeEach(async () => {
@@ -54,11 +55,11 @@ describe('PMPortalContextService', () => {
       hostname: 'test.example.com',
     };
 
-    jest.spyOn(console, 'log').mockImplementation();
+    vi.spyOn(console, 'log').mockImplementation(() => {});
   });
 
   afterEach(() => {
-    jest.restoreAllMocks();
+    vi.restoreAllMocks();
   });
 
   it('should be defined', () => {

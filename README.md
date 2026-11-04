@@ -19,7 +19,7 @@ $ npm run build
 ```
 
 ## Running unit tests
-Run `npm run test` to execute the unit tests via Jest
+Run `npm run test` to execute the unit tests via Vitest
 
 ## Requirements
 
