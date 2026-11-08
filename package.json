@@ -70,7 +70,7 @@
     "ts-loader": "9.6.2",
     "tsconfig-paths": "4.2.0",
     "typescript": "5.9.3",
-    "typescript-eslint": "8.65.0",
+    "typescript-eslint": "8.72.1",
     "uri-js": "4.4.1",
     "vitest": "5.1.0",
     "@vitest/coverage-v8": "5.1.0",
