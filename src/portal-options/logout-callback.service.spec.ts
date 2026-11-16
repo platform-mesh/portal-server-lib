@@ -71,6 +71,21 @@ describe('PMLogoutService', () => {
     );
   });
 
+  it('should return nothing when the identity provider has no end session endpoint', async () => {
+    const mockRequest = { query: {} } as Request;
+    const mockResponse = {} as Response;
+
+    (authConfigService.getAuthConfig as Mock).mockResolvedValue({
+      clientId: 'client-id',
+      clientSecret: 'secret',
+    });
+
+    const result = await service.handleLogout(mockRequest, mockResponse);
+
+    expect(result).toBeUndefined();
+    expect(httpService.post).not.toHaveBeenCalled();
+  });
+
   it('should not send the client secret as a form parameter', async () => {
     const mockRequest = {} as Request;
     const mockResponse = {} as Response;

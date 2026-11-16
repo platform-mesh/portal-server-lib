@@ -25,6 +25,11 @@ export class PMLogoutService implements LogoutCallback {
     response: Response,
   ): Promise<void | string> {
     const authConfig = await this.authConfigService.getAuthConfig(request);
+    // Not every identity provider has an end session endpoint, the portal
+    // session is ended either way.
+    if (!authConfig.endSessionUrl) {
+      return;
+    }
     try {
       const refreshToken = this.cookiesService.getAuthCookie(request);
 
