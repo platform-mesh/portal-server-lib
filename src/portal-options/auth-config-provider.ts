@@ -23,9 +23,7 @@ export class PMAuthConfigProvider implements AuthConfigService {
     const oidcUrl = getDiscoveryEndpoint(request);
     const org = getOrganization(request);
 
-    const { clientId, secretRefName } = await this.readClientId(org);
-    const clientSecret =
-      await this.kcpKubernetesService.getClientSecret(secretRefName);
+    const { clientId, clientSecret } = await this.readClient(org);
 
     const baseDomain = process.env['BASE_DOMAINS_DEFAULT'];
     const oidc = await this.discoveryService.getOIDC(oidcUrl);
@@ -58,6 +56,25 @@ export class PMAuthConfigProvider implements AuthConfigService {
       oidcIssuerUrl: oidc?.issuer,
       endSessionUrl: oidc?.end_session_endpoint,
     };
+  }
+
+  // A static client serves every organization: identity providers other than
+  // Keycloak have no IdentityProviderConfiguration to read a client from.
+  private async readClient(
+    orgName: string,
+  ): Promise<{ clientId: string; clientSecret: string }> {
+    const staticClientId = process.env['OIDC_STATIC_CLIENT_ID'];
+    if (staticClientId) {
+      return {
+        clientId: staticClientId,
+        clientSecret: process.env['OIDC_STATIC_CLIENT_SECRET'],
+      };
+    }
+
+    const { clientId, secretRefName } = await this.readClientId(orgName);
+    const clientSecret =
+      await this.kcpKubernetesService.getClientSecret(secretRefName);
+    return { clientId, clientSecret };
   }
 
   private async readClientId(

@@ -489,4 +489,41 @@ describe('PMAuthConfigProvider', () => {
       }
     });
   });
+
+  describe('static client', () => {
+    beforeEach(() => {
+      process.env.OIDC_STATIC_CLIENT_ID = 'platform-mesh';
+      process.env.OIDC_STATIC_CLIENT_SECRET = 'static-secret';
+    });
+
+    it('should use the static client instead of the identity provider configuration', async () => {
+      const result = await provider.getAuthConfig(mockRequest);
+
+      expect(result).toEqual({
+        idpName: 'org1',
+        baseDomain: 'example.com',
+        clientId: 'platform-mesh',
+        clientSecret: 'static-secret',
+        oauthServerUrl: 'https://auth.example.com/authorize',
+        oauthTokenUrl: 'https://auth.example.com/token',
+        oidcIssuerUrl: 'https://auth.example.com',
+        endSessionUrl: 'https://auth.example.com/logout',
+      });
+      expect(
+        kcpKubernetesService.listClusterCustomObject,
+      ).not.toHaveBeenCalled();
+      expect(kcpKubernetesService.getClientSecret).not.toHaveBeenCalled();
+    });
+
+    it('should throw HttpException when the static client has no secret', async () => {
+      delete process.env.OIDC_STATIC_CLIENT_SECRET;
+
+      await expect(provider.getAuthConfig(mockRequest)).rejects.toThrow(
+        HttpException,
+      );
+      expect(
+        kcpKubernetesService.listClusterCustomObject,
+      ).not.toHaveBeenCalled();
+    });
+  });
 });
