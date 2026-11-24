@@ -21,7 +21,7 @@ concurrency:
 jobs:
   tag:
     if: ${{ github.event_name == 'workflow_dispatch' }}
-    uses: platform-mesh/.github/.github/workflows/job-tag-version.yml@1dc649e8143612bd65439b0e556c02ace1c33f61
+    uses: platform-mesh/.github/.github/workflows/job-tag-version.yml@1dc649e8143612bd65439b0e556c02ace1c33f61 # zizmor: ignore[stale-action-refs]
     permissions:
       contents: read
     with:
@@ -32,7 +32,7 @@ jobs:
 
   version:
     if: ${{ github.event_name == 'push' }}
-    uses: platform-mesh/.github/.github/workflows/job-tag-version.yml@1dc649e8143612bd65439b0e556c02ace1c33f61
+    uses: platform-mesh/.github/.github/workflows/job-tag-version.yml@1dc649e8143612bd65439b0e556c02ace1c33f61 # zizmor: ignore[stale-action-refs]
     permissions:
       contents: read
     with:
@@ -40,12 +40,12 @@ jobs:
 
   build:
     needs: [version]
-    uses: platform-mesh/.github/.github/workflows/job-node-test.yml@1dc649e8143612bd65439b0e556c02ace1c33f61
+    uses: platform-mesh/.github/.github/workflows/job-node-test.yml@1dc649e8143612bd65439b0e556c02ace1c33f61 # zizmor: ignore[stale-action-refs]
     secrets: inherit # zizmor: ignore[secrets-inherit]
 
   publish:
     needs: [version, build]
-    uses: platform-mesh/.github/.github/workflows/job-node-publish.yml@1dc649e8143612bd65439b0e556c02ace1c33f61
+    uses: platform-mesh/.github/.github/workflows/job-node-publish.yml@1dc649e8143612bd65439b0e556c02ace1c33f61 # zizmor: ignore[stale-action-refs]
     secrets: inherit # zizmor: ignore[secrets-inherit]
     permissions:
       contents: read
@@ -58,7 +58,7 @@ jobs:
 
   github-release:
     needs: [version, publish]
-    uses: platform-mesh/.github/.github/workflows/job-github-release.yml@1dc649e8143612bd65439b0e556c02ace1c33f61
+    uses: platform-mesh/.github/.github/workflows/job-github-release.yml@1dc649e8143612bd65439b0e556c02ace1c33f61 # zizmor: ignore[stale-action-refs]
     permissions:
       contents: write # Needed to create the GitHub release
     with:
