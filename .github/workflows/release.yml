@@ -2,8 +2,14 @@ name: release
 
 on:
   push:
-    branches:
-      - main
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to release (e.g. 1.2.0 or 1.2.0-rc.1). The tag is created on the latest commit of the selected branch.'
+        type: string
+        required: true
 
 permissions:
   contents: read
@@ -13,23 +19,50 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  build:
-    uses: platform-mesh/.github/.github/workflows/job-node-test.yml@33d3ee309a70b300c1775d78054cbb9215673b7b
-    secrets: inherit # zizmor: ignore[secrets-inherit]
-
-  create-version:
-    uses: platform-mesh/.github/.github/workflows/job-create-version.yml@33d3ee309a70b300c1775d78054cbb9215673b7b
-    secrets: inherit # zizmor: ignore[secrets-inherit]
+  tag:
+    if: ${{ github.event_name == 'workflow_dispatch' }}
+    uses: platform-mesh/.github/.github/workflows/job-tag-version.yml@1dc649e8143612bd65439b0e556c02ace1c33f61
     permissions:
-      contents: write # Needed to push the version tag and create the GitHub release
+      contents: read
+    with:
+      version: ${{ inputs.version }}
+      versionFiles: package.json
+    secrets:
+      PM_PUBLISHER_PRIVATE_KEY: ${{ secrets.PM_PUBLISHER_PRIVATE_KEY }}
+
+  version:
+    if: ${{ github.event_name == 'push' }}
+    uses: platform-mesh/.github/.github/workflows/job-tag-version.yml@1dc649e8143612bd65439b0e556c02ace1c33f61
+    permissions:
+      contents: read
+    with:
+      versionFiles: package.json
+
+  build:
+    needs: [version]
+    uses: platform-mesh/.github/.github/workflows/job-node-test.yml@1dc649e8143612bd65439b0e556c02ace1c33f61
+    secrets: inherit # zizmor: ignore[secrets-inherit]
 
   publish:
-    needs: [create-version, build]
-    uses: platform-mesh/.github/.github/workflows/job-node-publish.yml@33d3ee309a70b300c1775d78054cbb9215673b7b
+    needs: [version, build]
+    uses: platform-mesh/.github/.github/workflows/job-node-publish.yml@1dc649e8143612bd65439b0e556c02ace1c33f61
     secrets: inherit # zizmor: ignore[secrets-inherit]
     permissions:
-      contents: write # Needed to create the GitHub release for the published version
+      contents: read
       id-token: write # Needed for OIDC provenance when publishing to npm
     with:
-      version: ${{ needs.create-version.outputs.strictVersion }}
+      version: ${{ needs.version.outputs.version }}
+      distTag: ${{ needs.version.outputs.distTag }}
+      commitVersion: false
       environment: npmjs:@platform-mesh/portal-server-lib
+
+  github-release:
+    needs: [version, publish]
+    uses: platform-mesh/.github/.github/workflows/job-github-release.yml@1dc649e8143612bd65439b0e556c02ace1c33f61
+    permissions:
+      contents: write # Needed to create the GitHub release
+    with:
+      tag: ${{ needs.version.outputs.tag }}
+      previousTag: ${{ needs.version.outputs.previousTag }}
+      prerelease: ${{ needs.version.outputs.prerelease == 'true' }}
+      latest: ${{ needs.version.outputs.latest == 'true' }}
