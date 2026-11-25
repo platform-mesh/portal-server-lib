@@ -17,4 +17,4 @@ concurrency:
 
 jobs:
   pr-title:
-    uses: platform-mesh/.github/.github/workflows/job-pr-title.yml@1dc649e8143612bd65439b0e556c02ace1c33f61
+    uses: platform-mesh/.github/.github/workflows/job-pr-title.yml@1dc649e8143612bd65439b0e556c02ace1c33f61 # zizmor: ignore[stale-action-refs]
